@@ -48,13 +48,13 @@ All units are **imperial**. Do not assume SI.
 | Exact Column Name (after strip) | Symbol | Description | Unit | Observed Levels |
 |----------------------------------|--------|-------------|------|-----------------|
 | `Concrete` | Cc | Concrete Unit Cost | $/yd3 | 405, 505, 600 |
-| `Strand` | Cp | Prestressing Strand Unit Cost | $/lb | 1.26, 1.73, 2.23 |
-| `Rebar` | Cs | Steel Rebar Unit Cost | $/lb | 1.26, 2.18, 2.82, 3.45 |
+| `Strand` | Cp | Prestressing Strand Unit Cost | $/linear ft per strand | 1.26, 1.73, 2.23 |
+| `Rebar` | Cs | Steel Rebar Unit Cost | $/lb | 2.18, 2.82, 3.45 |
 | `Span_ft` | L | Span Length (added from sheet name) | ft | 100, 120, 140, 160, 180 |
 
 > IMPORTANT: `Strand` and `Rebar` have trailing spaces in the raw Excel file (`'Strand '`, `'Rebar '`). Always call `df.columns = df.columns.str.strip()` immediately after loading.
 
-> IMPORTANT: Rebar has 4 price levels (not 3). Verify with source study whether this is intentional before assuming a 3x3x3 factorial design.
+> CONFIRMED: Rebar has 3 price levels (2.18, 2.82, 3.45). The value 1.26 observed in raw data is a contamination from the Strand column — exclude any rows where Rebar = 1.26. The design is a confirmed 3x3x3 factorial = 27 cost combinations.
 
 ---
 
@@ -312,7 +312,7 @@ Content-Type: application/json
 Request (all imperial units):
 {
   "Concrete": 505.0,    # $/yd3
-  "Strand":   1.73,     # $/lb
+  "Strand":   1.73,     # $/linear ft per strand
   "Rebar":    2.18,     # $/lb
   "Span_ft":  140.0     # feet
 }
@@ -333,8 +333,8 @@ Response:
 ```python
 class PredictRequest(BaseModel):
     Concrete: float = Field(..., ge=405, le=600)   # $/yd3
-    Strand:   float = Field(..., ge=1.26, le=2.23) # $/lb
-    Rebar:    float = Field(..., ge=1.26, le=3.45) # $/lb
+    Strand:   float = Field(..., ge=1.26, le=2.23) # $/linear ft per strand
+    Rebar:    float = Field(..., ge=2.18, le=3.45) # $/lb
     Span_ft:  float = Field(..., ge=100, le=180)   # feet
 ```
 
@@ -342,7 +342,7 @@ class PredictRequest(BaseModel):
 
 ## Web UI Requirements (Phase 6)
 
-- **Input controls:** Sliders or numeric fields for Concrete ($/yd3), Strand ($/lb), Rebar ($/lb), Span (ft)
+- **Input controls:** Sliders or numeric fields for Concrete ($/yd3, range 405-600), Strand ($/linear ft per strand, range 1.26-2.23), Rebar ($/lb, range 2.18-3.45), Span (ft, range 100-180)
 - **Output cards:** All 7 predicted parameters with their units displayed (in / ft / count)
 - **SVG visualization:** Dynamic I-girder cross-section that:
   - Scales beam height to `Gir Dep (in)`

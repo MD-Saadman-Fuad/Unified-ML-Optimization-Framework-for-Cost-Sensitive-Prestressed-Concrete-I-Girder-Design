@@ -78,7 +78,7 @@
 - [ ] **1.6** Group by `Span_ft` and plot how each target varies across spans
 - [ ] **1.7** Group by `Concrete` level and verify expected cost-driven design trends
 - [ ] **1.8** Flag and investigate any `bot flange bot part depth (in)` = 0.0 rows — decide whether to drop or keep
-- [ ] **1.9** Verify that Rebar has 4 observed price levels; document whether 1.26 is an error or valid 4th level
+- [ ] **1.9** Filter out raw data contamination (exclude rows where Rebar = 1.26); verify valid Rebar cost range [2.18, 3.45]
 
 #### Feature Engineering
 
@@ -224,8 +224,8 @@ All units remain imperial throughout this phase.
 
 - [ ] **6.1** Create `api/main.py` with FastAPI app
 - [ ] **6.2** Implement `POST /predict` endpoint:
-  - Accept JSON with fields: `Concrete` ($/yd3), `Strand` ($/lb), `Rebar` ($/lb), `Span_ft` (ft)
-  - Validate inputs: Concrete in [405,600], Strand in [1.26,2.23], Rebar in [1.26,3.45], Span_ft in [100,180]
+  - Accept JSON with fields: `Concrete` ($/yd3), `Strand` ($/linear ft per strand), `Rebar` ($/lb), `Span_ft` (ft)
+  - Validate inputs: Concrete in [405,600], Strand in [1.26,2.23], Rebar in [2.18,3.45], Span_ft in [100,180]
   - Run: `build_features` -> `scaler.transform` -> `model.predict` -> `enforce_constraints`
   - Return JSON with all 7 predicted values with their units
 - [ ] **6.3** Load scaler and model from `.pkl` files at startup using `joblib.load`

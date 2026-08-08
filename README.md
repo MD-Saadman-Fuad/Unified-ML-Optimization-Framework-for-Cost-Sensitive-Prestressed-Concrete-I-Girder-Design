@@ -37,11 +37,11 @@ f: (Concrete, Strand, Rebar, Span_ft)  --ML Pipeline-->  (Gd, S, Ng, P, Q, Ns, H
 | Symbol | Excel Column Name | Description | Unit | Levels |
 |--------|-------------------|-------------|------|--------|
 | Concrete | `Concrete` | Concrete Unit Cost | $/yd3 | 405, 505, 600 |
-| Strand | `Strand` | Prestressing Strand Unit Cost | $/lb | 1.26, 1.73, 2.23 |
-| Rebar | `Rebar` | Steel Rebar Unit Cost | $/lb | 1.26, 2.18, 2.82, 3.45 |
+| Strand | `Strand` | Prestressing Strand Unit Cost | $/linear ft per strand | 1.26, 1.73, 2.23 |
+| Rebar | `Rebar` | Steel Rebar Unit Cost | $/lb | 2.18, 2.82, 3.45 |
 | Span_ft | Sheet name (added programmatically) | Span Length | ft | 100, 120, 140, 160, 180 |
 
-> Note: Rebar has 4 observed price levels in the data. This is a 3x3x4x5 design (Concrete x Strand x Rebar x Span). Verify with the source optimization study whether this was intentional.
+> Note: The dataset follows a full 3x3x3x5 factorial design (Concrete x Strand x Rebar x Span) = 27 cost combinations x 5 spans x 5 runs = 675 gross rows. The value 1.26 seen in raw Rebar data is a data contamination from the Strand column and should be excluded. Valid Rebar range is 2.18 to 3.45.
 
 ### Targets — Y_target (7 outputs)
 
@@ -73,7 +73,7 @@ The file has 5 data sheets (plus one empty sheet). Each sheet represents one spa
 
 - **Gross rows before cleaning:** 675
 - **Rows after dropping outliers:** 670
-- **Structure:** 27+ cost combinations x 5 span lengths x 5 runs/variants
+- **Structure:** 27 cost combinations (3x3x3 factorial) x 5 span lengths x 5 runs/variants = 675 gross rows
 - **Source:** Pre-optimized using classical structural optimization algorithms
 
 ### Known Data Quality Issues

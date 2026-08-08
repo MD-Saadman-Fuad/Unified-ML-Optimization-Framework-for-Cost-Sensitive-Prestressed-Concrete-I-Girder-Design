@@ -47,7 +47,7 @@ The model studies the patterns and essentially "memorizes" the relationship betw
 |---|---|
 | Price of concrete (per cubic yard) | Recommended beam depth (in inches) |
 | Price of steel rebar (per pound) | Lateral spacing between beams (in feet) |
-| Price of prestressing strands (per pound) | Number of beams needed |
+| Price of prestressing strands (per linear foot per strand) | Number of beams needed |
 | Length of the bridge span (in feet) | Depth and width of the bottom flange (in inches) |
 | | Number of steel strands per beam |
 | | Position of the harping point (where strands change angle) |
