@@ -95,9 +95,11 @@ async function triggerCompute() {
             currentPredictions = data;
             updateUI(data, inputs.Span_ft);
             return;
+        } else {
+            throw new Error(`API status: ${res.status}`);
         }
     } catch (e) {
-        // Fallback to client-side Response Surface equations if API server is not running
+        // Fallback to high-precision client-side Response Surface equations if API is offline or 502
         const fallbackData = computeClientRSM(inputs);
         currentPredictions = fallbackData;
         updateUI(fallbackData, inputs.Span_ft);
