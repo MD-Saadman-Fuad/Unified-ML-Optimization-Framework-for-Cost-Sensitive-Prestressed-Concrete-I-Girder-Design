@@ -7,7 +7,7 @@
 
 Right now, the application runs on your personal computer (`http://localhost:8000`). Only you can see it on your screen.
 
-**Deployment** means uploading the files to a free cloud server so that the web page gets its own **live public web address (URL)** (for example: `https://girder-ml-optimizer.onrender.com/ui/index.html`).
+**Deployment** means uploading the files to a free cloud server so that the web page gets its own **live public web address (URL)** (for example: `https://girder-ml-optimizer.onrender.com`).
 
 Once deployed:
 - Anyone with the link can open the tool on their laptop, tablet, or mobile phone.
@@ -45,7 +45,7 @@ Render is a free web hosting platform that can run your Python backend and host 
 ### Step 3: Access Your Live App
 - Render will spend 2–3 minutes setting up your app.
 - Once finished, Render will display a public link at the top (e.g. `https://girder-ml-optimizer.onrender.com`).
-- Open `https://girder-ml-optimizer.onrender.com/ui/index.html` in your browser.
+- Open `https://girder-ml-optimizer.onrender.com` in your browser (it automatically redirects to `/ui/index.html`).
 - **Congratulations! Your ML Bridge Optimizer is now live on the internet!** 🎉
 
 ---
@@ -95,7 +95,7 @@ That's it! The system will build and run automatically on port 8000.
 - [x] `models/scaler.pkl` and `models/best_model.pkl` are committed in the project repository.
 - [x] `requirements.txt` contains all pinned libraries.
 - [x] CORS middleware in `api/main.py` is enabled for public access (`allow_origins=["*"]`).
-- [x] Fallback client-side solver in `ui/app.js` is active so the Web UI works even if backend wakes up slowly.
+- [x] Fallback client-side solver in `ui/app.js` handles 502 Bad Gateway cold-starts gracefully so the UI never displays errors.`n- [x] Dynamic `window.location.origin` in `ui/app.js` eliminates CORS issues across all deployment domains.`n- [x] Root `GET /` endpoint in `api/main.py` redirects to `/ui/index.html` automatically.`n- [x] `api/main.py` reads `os.getenv("PORT", 8000)` for dynamic cloud port binding.
 
 ---
 

@@ -83,13 +83,13 @@ Applies post-processing constraints to raw model predictions:
 - **Unit Test Suite:** 100% test pass rate in `tests/test_pipeline.py`.
 
 ### Phase 6: FastAPI Backend (`api/main.py`)
-- Provides RESTful API endpoints: `POST /predict`, `GET /health`, and `GET /equations`.
+- Provides RESTful API endpoints: `GET /` (root redirect to `/ui/index.html`), `POST /predict`, `GET /health`, and `GET /equations` with dynamic `PORT` environment variable binding.
 - Validates inputs using Pydantic Field schemas.
 
 ### Phase 7: Dynamic Interactive Web UI (`ui/`)
 - Modern dark glassmorphism dashboard (`ui/index.html`, `ui/style.css`, `ui/app.js`).
 - Parametric SVG Canvas: Real-time dynamic rendering of the I-girder cross-section, bottom flange geometry, strand grid dots, and harping position.
-- Features client-side RSM solver fallback and CSV report export.
+- Features dynamic API origin detection (`window.location.origin`), zero-downtime client-side RSM solver fallback on 502/cold-starts, and CSV report export.
 
 ---
 

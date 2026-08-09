@@ -303,7 +303,7 @@ def enforce_constraints(pred: dict, L_ft: float) -> dict:
 
 ## Inference API (Phase 6)
 
-### FastAPI Endpoint
+### FastAPI Endpoints`n`n- `GET /`: Automatic redirect to `/ui/index.html``n- `GET /health`: Health check (`status`, `scaler_loaded`, `model_loaded`)`n- `GET /equations`: Returns derived RSM equations JSON`n- `POST /predict`: Main ML surrogate prediction endpoint
 
 ```
 POST /predict
