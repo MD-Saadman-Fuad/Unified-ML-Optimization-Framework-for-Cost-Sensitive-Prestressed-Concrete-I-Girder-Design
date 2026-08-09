@@ -1,6 +1,9 @@
-﻿// Prestressed Concrete I-Girder ML Optimizer Application Script
+// Prestressed Concrete I-Girder ML Optimizer Application Script
 
-const API_BASE_URL = "http://localhost:8000";
+// Dynamically detect API origin: use window.location.origin on production web hosts, fallback to localhost for development
+const API_BASE_URL = (typeof window !== 'undefined' && window.location && window.location.origin && !window.location.origin.includes('8080') && !window.location.origin.includes('file:'))
+    ? window.location.origin
+    : "http://localhost:8000";
 
 // Dominant target elements
 const elements = {
