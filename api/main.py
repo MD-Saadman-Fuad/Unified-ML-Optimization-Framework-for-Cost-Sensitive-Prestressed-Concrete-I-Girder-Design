@@ -10,6 +10,7 @@ import joblib
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional
 
@@ -38,6 +39,10 @@ app.add_middleware(
 if os.path.exists("ui"):
     app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")
 
+@app.get("/")
+def root():
+    return RedirectResponse(url="/ui/index.html")
+
 
 # Global artifacts holders
 SCALER = None
@@ -56,7 +61,7 @@ def get_artifacts():
     return SCALER, MODEL
 
 class PredictRequest(BaseModel):
-    Concrete: float = Field(..., ge=405.0, le=600.0, description="Concrete Unit Cost ($/yd³)")
+    Concrete: float = Field(..., ge=405.0, le=600.0, description="Concrete Unit Cost ($/yd3)")
     Strand: float = Field(..., ge=1.26, le=2.23, description="Prestressing Strand Unit Cost ($/linear ft per strand)")
     Rebar: float = Field(..., ge=2.18, le=3.45, description="Steel Rebar Unit Cost ($/lb)")
     Span_ft: float = Field(..., ge=100.0, le=180.0, description="Span Length (ft)")
