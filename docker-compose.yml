@@ -1,0 +1,11 @@
+﻿version: '3.8'
+
+services:
+  girder-optimizer-api:
+    build: .
+    container_name: girder_ml_optimizer
+    ports:
+      - "8000:8000"
+    restart: always
+    environment:
+      - PORT=8000

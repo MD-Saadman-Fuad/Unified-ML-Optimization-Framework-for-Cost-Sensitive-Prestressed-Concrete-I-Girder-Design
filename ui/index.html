@@ -1,0 +1,187 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prestressed Concrete I-Girder ML Optimizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="brand">
+                    <div class="brand-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 4H20M4 20H20M12 4V20M8 4H16M8 20H16" stroke="url(#brand-grad)" stroke-width="2.5" stroke-linecap="round"/>
+                            <defs>
+                                <linearGradient id="brand-grad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#38bdf8"/>
+                                    <stop offset="1" stop-color="#818cf8"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1>Prestressed Concrete I-Girder ML Optimizer</h1>
+                        <p class="subtitle">Surrogate Machine Learning Framework for Cost-Sensitive Bridge Design</p>
+                    </div>
+                </div>
+                <div class="header-badges">
+                    <span class="status-badge live" id="api-status">
+                        <span class="dot"></span> Surrogate ML Engine Connected
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="main-grid">
+            <!-- Left Panel: Input Controls -->
+            <section class="glass-card input-panel">
+                <div class="card-header">
+                    <h2>Design Inputs & Material Unit Costs</h2>
+                    <p class="card-desc">Adjust real-time market costs and span length to calculate optimal cross-section geometry.</p>
+                </div>
+
+                <div class="controls-form">
+                    <!-- Concrete Unit Cost -->
+                    <div class="control-group">
+                        <div class="control-label">
+                            <label for="input-concrete">Concrete Unit Cost ($/yd³)</label>
+                            <input type="number" id="num-concrete" min="405" max="600" step="5" value="505">
+                        </div>
+                        <input type="range" id="input-concrete" min="405" max="600" step="5" value="505" class="slider">
+                        <div class="slider-bounds"><span>$405</span><span>$505 (Mid)</span><span>$600</span></div>
+                    </div>
+
+                    <!-- Prestressing Strand Unit Cost -->
+                    <div class="control-group">
+                        <div class="control-label">
+                            <label for="input-strand">Strand Unit Cost ($/ft/strand)</label>
+                            <input type="number" id="num-strand" min="1.26" max="2.23" step="0.01" value="1.73">
+                        </div>
+                        <input type="range" id="input-strand" min="1.26" max="2.23" step="0.01" value="1.73" class="slider">
+                        <div class="slider-bounds"><span>$1.26</span><span>$1.73 (Mid)</span><span>$2.23</span></div>
+                    </div>
+
+                    <!-- Steel Rebar Unit Cost -->
+                    <div class="control-group">
+                        <div class="control-label">
+                            <label for="input-rebar">Steel Rebar Unit Cost ($/lb)</label>
+                            <input type="number" id="num-rebar" min="2.18" max="3.45" step="0.01" value="2.82">
+                        </div>
+                        <input type="range" id="input-rebar" min="2.18" max="3.45" step="0.01" value="2.82" class="slider">
+                        <div class="slider-bounds"><span>$2.18</span><span>$2.82 (Mid)</span><span>$3.45</span></div>
+                    </div>
+
+                    <!-- Span Length -->
+                    <div class="control-group">
+                        <div class="control-label">
+                            <label for="input-span">Span Length (ft)</label>
+                            <input type="number" id="num-span" min="100" max="180" step="5" value="140">
+                        </div>
+                        <input type="range" id="input-span" min="100" max="180" step="5" value="140" class="slider">
+                        <div class="slider-bounds"><span>100 ft</span><span>140 ft</span><span>180 ft</span></div>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-primary" id="btn-predict">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        Compute Optimal Design
+                    </button>
+                    <button class="btn btn-secondary" id="btn-export">Export Report</button>
+                </div>
+            </section>
+
+            <!-- Center Panel: Live SVG Cross-Section -->
+            <section class="glass-card visualization-panel">
+                <div class="card-header">
+                    <h2>Dynamic Cross-Section & Tendon Layout</h2>
+                    <p class="card-desc">Real-time parametric SVG visualization of predicted I-girder dimensions and prestressing strands.</p>
+                </div>
+
+                <div class="svg-wrapper">
+                    <svg id="girder-svg" viewBox="0 0 500 550" preserveAspectRatio="xMidYMid meet">
+                        <!-- SVG dynamically rendered by app.js -->
+                    </svg>
+                </div>
+
+                <div class="svg-legend">
+                    <div class="legend-item"><span class="legend-box concrete"></span> Concrete Flange/Web</div>
+                    <div class="legend-item"><span class="legend-dot strand"></span> Prestressing Strand (Ns)</div>
+                    <div class="legend-item"><span class="legend-line harp"></span> Harping Position (Hp)</div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Predicted Outputs -->
+            <section class="glass-card results-panel">
+                <div class="card-header">
+                    <h2>Optimal Design Parameters</h2>
+                    <p class="card-desc">Target structural predictions enforced by AASHTO physical constraints.</p>
+                </div>
+
+                <div class="results-grid">
+                    <!-- Girder Depth -->
+                    <div class="res-card accent-blue">
+                        <div class="res-label">Girder Depth (G_d)</div>
+                        <div class="res-value" id="val-gd">72.0 <span class="unit">in</span></div>
+                        <div class="res-sub">AASHTO Min: <span id="val-gd-min">84.0</span> in</div>
+                    </div>
+
+                    <!-- Lateral Spacing -->
+                    <div class="res-card accent-indigo">
+                        <div class="res-label">Lateral Spacing (S)</div>
+                        <div class="res-value" id="val-s">6.15 <span class="unit">ft</span></div>
+                        <div class="res-sub">Girder Center-to-Center</div>
+                    </div>
+
+                    <!-- Number of Girders -->
+                    <div class="res-card accent-purple">
+                        <div class="res-label">Number of Girders (N_g)</div>
+                        <div class="res-value" id="val-ng">7 <span class="unit">girders</span></div>
+                        <div class="res-sub">Discrete Count (6–13)</div>
+                    </div>
+
+                    <!-- Bottom Flange Depth -->
+                    <div class="res-card accent-cyan">
+                        <div class="res-label">Bot Flange Depth (P)</div>
+                        <div class="res-value" id="val-p">8.5 <span class="unit">in</span></div>
+                        <div class="res-sub">Bottom Part Thickness</div>
+                    </div>
+
+                    <!-- Bottom Flange Width -->
+                    <div class="res-card accent-teal">
+                        <div class="res-label">Bot Flange Width (Q)</div>
+                        <div class="res-value" id="val-q">38.0 <span class="unit">in</span></div>
+                        <div class="res-sub">Bottom Part Width</div>
+                    </div>
+
+                    <!-- Number of Strands -->
+                    <div class="res-card accent-amber">
+                        <div class="res-label">Prestressing Strands (N_s)</div>
+                        <div class="res-value" id="val-ns">72 <span class="unit">strands</span></div>
+                        <div class="res-sub">Even Tendon Count</div>
+                    </div>
+
+                    <!-- Harping Position -->
+                    <div class="res-card accent-rose">
+                        <div class="res-label">Harping Position (H_p)</div>
+                        <div class="res-value" id="val-hp">49.5 <span class="unit">ft</span></div>
+                        <div class="res-sub">Strand Deviation Point</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,1 +1,8 @@
-ScatteredContext.md
+﻿ScatteredContext.md
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+venv/
+.idea/
+.vscode/

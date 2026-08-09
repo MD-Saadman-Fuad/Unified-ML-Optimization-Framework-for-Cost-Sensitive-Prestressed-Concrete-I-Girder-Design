@@ -1,0 +1,182 @@
+{
+  "RandomForest": {
+    "Gir Dep (in)": {
+      "r2": 0.06525,
+      "rmse": 3.8449,
+      "rmse_pct_range": 18.8386,
+      "mape_pct": 4.4389
+    },
+    "Lat Spac (ft)": {
+      "r2": 0.39649,
+      "rmse": 0.8948,
+      "rmse_pct_range": 23.1864,
+      "mape_pct": 13.0981
+    },
+    "No. of Gir": {
+      "r2": 0.5689,
+      "rmse": 1.1401,
+      "rmse_pct_range": 16.2877,
+      "mape_pct": 12.8195
+    },
+    "bot flange bot part depth (in)": {
+      "r2": -0.29279,
+      "rmse": 3.4241,
+      "rmse_pct_range": 24.3554,
+      "mape_pct": 54.1573
+    },
+    "bot flange bot part width (in)": {
+      "r2": 0.03262,
+      "rmse": 12.9826,
+      "rmse_pct_range": 19.9086,
+      "mape_pct": 31.834
+    },
+    "Number of strand per girder": {
+      "r2": 0.80886,
+      "rmse": 9.4453,
+      "rmse_pct_range": 11.5187,
+      "mape_pct": 9.3397
+    },
+    "Harp Pos (ft)": {
+      "r2": 0.06723,
+      "rmse": 12.4504,
+      "rmse_pct_range": 23.5243,
+      "mape_pct": 20.0612
+    },
+    "mean_r2": 0.23522
+  },
+  "GradientBoosting": {
+    "Gir Dep (in)": {
+      "r2": 0.16638,
+      "rmse": 3.6309,
+      "rmse_pct_range": 17.7904,
+      "mape_pct": 4.231
+    },
+    "Lat Spac (ft)": {
+      "r2": 0.49686,
+      "rmse": 0.817,
+      "rmse_pct_range": 21.1708,
+      "mape_pct": 12.5618
+    },
+    "No. of Gir": {
+      "r2": 0.61462,
+      "rmse": 1.078,
+      "rmse_pct_range": 15.3997,
+      "mape_pct": 12.1692
+    },
+    "bot flange bot part depth (in)": {
+      "r2": -0.14164,
+      "rmse": 3.2177,
+      "rmse_pct_range": 22.8874,
+      "mape_pct": 52.5341
+    },
+    "bot flange bot part width (in)": {
+      "r2": 0.14347,
+      "rmse": 12.2162,
+      "rmse_pct_range": 18.7333,
+      "mape_pct": 29.732
+    },
+    "Number of strand per girder": {
+      "r2": 0.8249,
+      "rmse": 9.0404,
+      "rmse_pct_range": 11.0249,
+      "mape_pct": 8.6561
+    },
+    "Harp Pos (ft)": {
+      "r2": 0.18962,
+      "rmse": 11.6049,
+      "rmse_pct_range": 21.9268,
+      "mape_pct": 18.8511
+    },
+    "mean_r2": 0.32774
+  },
+  "XGBoost_Default": {
+    "Gir Dep (in)": {
+      "r2": 0.05007,
+      "rmse": 3.876,
+      "rmse_pct_range": 18.991,
+      "mape_pct": 4.4668
+    },
+    "Lat Spac (ft)": {
+      "r2": 0.37845,
+      "rmse": 0.908,
+      "rmse_pct_range": 23.5303,
+      "mape_pct": 13.0997
+    },
+    "No. of Gir": {
+      "r2": 0.56401,
+      "rmse": 1.1466,
+      "rmse_pct_range": 16.3798,
+      "mape_pct": 12.7614
+    },
+    "bot flange bot part depth (in)": {
+      "r2": -0.32391,
+      "rmse": 3.4651,
+      "rmse_pct_range": 24.6468,
+      "mape_pct": 54.2651
+    },
+    "bot flange bot part width (in)": {
+      "r2": 0.01349,
+      "rmse": 13.1104,
+      "rmse_pct_range": 20.1045,
+      "mape_pct": 31.9072
+    },
+    "Number of strand per girder": {
+      "r2": 0.80978,
+      "rmse": 9.4226,
+      "rmse_pct_range": 11.4909,
+      "mape_pct": 9.3815
+    },
+    "Harp Pos (ft)": {
+      "r2": 0.04937,
+      "rmse": 12.569,
+      "rmse_pct_range": 23.7485,
+      "mape_pct": 20.4006
+    },
+    "mean_r2": 0.22018
+  },
+  "Tuned_XGBoost": {
+    "Gir Dep (in)": {
+      "r2": 0.04783,
+      "rmse": 3.8805,
+      "rmse_pct_range": 19.0134,
+      "mape_pct": 4.473
+    },
+    "Lat Spac (ft)": {
+      "r2": 0.37866,
+      "rmse": 0.9079,
+      "rmse_pct_range": 23.5264,
+      "mape_pct": 13.1044
+    },
+    "No. of Gir": {
+      "r2": 0.56367,
+      "rmse": 1.147,
+      "rmse_pct_range": 16.386,
+      "mape_pct": 12.7614
+    },
+    "bot flange bot part depth (in)": {
+      "r2": -0.32355,
+      "rmse": 3.4646,
+      "rmse_pct_range": 24.6434,
+      "mape_pct": 54.1874
+    },
+    "bot flange bot part width (in)": {
+      "r2": 0.01434,
+      "rmse": 13.1047,
+      "rmse_pct_range": 20.0958,
+      "mape_pct": 31.9222
+    },
+    "Number of strand per girder": {
+      "r2": 0.80926,
+      "rmse": 9.4354,
+      "rmse_pct_range": 11.5066,
+      "mape_pct": 9.3861
+    },
+    "Harp Pos (ft)": {
+      "r2": 0.04715,
+      "rmse": 12.5837,
+      "rmse_pct_range": 23.7762,
+      "mape_pct": 20.4201
+    },
+    "mean_r2": 0.21962
+  }
+}
