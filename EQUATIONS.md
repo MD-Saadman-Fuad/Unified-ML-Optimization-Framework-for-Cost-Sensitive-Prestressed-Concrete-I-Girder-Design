@@ -67,13 +67,13 @@ $$
 
 ### Equation 3.1: Standard Score (Z-Score) Normalization
 $$
-z_{j} = \frac{x_{j} - \mu_j}{\sigma_j} \quad \text{for } j = 1, 2, \dots, 8
+z_{j} = \frac{x_{j} - \mu_{j}}{\sigma_{j}} \quad \text{for } j = 1, 2, \dots, 8
 $$
 
 Where:
-* x_j is the raw value of feature j.
-* μ_j is the sample mean computed **strictly on training data** (N_train = 476).
-* σ_j is the sample standard deviation computed on training data (`models/scaler.pkl`).
+* x_{j} is the raw value of feature j.
+* μ_{j} is the sample mean computed **strictly on training data** (N_train = 476).
+* σ_{j} is the sample standard deviation computed on training data (`models/scaler.pkl`).
 
 ---
 
@@ -83,17 +83,17 @@ The primary surrogate model ([models/best_model.pkl](file:///e:/civil/Unified-ML
 
 ### Equation 4.1: Gradient Boosted Tree Prediction
 $$
-\hat{Y}_{\text{target}} = \begin{bmatrix} \hat{y}_1(Z), & \hat{y}_2(Z), & \dots, & \hat{y}_7(Z) \end{bmatrix}^T
+\hat{Y}_{\text{target}} = \begin{bmatrix} \hat{y}_{1}(Z), & \hat{y}_{2}(Z), & \dots, & \hat{y}_{7}(Z) \end{bmatrix}^T
 $$
 
-Where for each target k in {1, 2, ..., 7}:
+Where for each target output k in {1, 2, ..., 7}:
 $$
-\hat{y}_k(Z) = \sum_{m=1}^{M} \gamma_{m,k} \cdot f_{m,k}(Z)
+\hat{y}_{k}(Z) = \eta \sum_{m=1}^{M} f_{m,k}(Z)
 $$
 
 * M is the number of boosted trees (`n_estimators`).
-* f_{m,k}(Z) is the decision tree mapping standardized feature vector Z to leaf outputs.
-* γ_{m,k} is the shrinkage learning rate (η).
+* f_{m,k}(Z) is the individual decision tree mapping standardized feature vector Z ∈ ℝ⁸ to leaf values.
+* η is the learning rate shrinkage factor (`learning_rate`).
 
 ---
 
@@ -103,7 +103,7 @@ Response Surface Methodology fits 2nd-order polynomial models across raw inputs 
 
 ### General 2nd-Order Polynomial Structure
 $$
-\hat{y}_k = \beta_0 + \beta_1 C_c + \beta_2 C_p + \beta_3 C_s + \beta_4 L + \beta_5 C_c^2 + \beta_6 (C_c C_p) + \beta_7 (C_c C_s) + \beta_8 (C_c L) + \beta_9 C_p^2 + \beta_{10} (C_p C_s) + \beta_{11} (C_p L) + \beta_{12} C_s^2 + \beta_{13} (C_s L) + \beta_{14} L^2
+\hat{y}_{k} = \beta_{0} + \beta_{1} C_c + \beta_{2} C_p + \beta_{3} C_s + \beta_{4} L + \beta_{5} C_c^2 + \beta_{6} (C_c C_p) + \beta_{7} (C_c C_s) + \beta_{8} (C_c L) + \beta_{9} C_p^2 + \beta_{10} (C_p C_s) + \beta_{11} (C_p L) + \beta_{12} C_s^2 + \beta_{13} (C_s L) + \beta_{14} L^2
 $$
 
 ---
@@ -198,47 +198,47 @@ Raw model predictions pass through post-processing functions (`src/postprocess/c
 
 ### Equation 6.1: AASHTO Minimum Girder Depth (G_d,min)
 $$
-G_{d,min}(L) = 0.045 \times L \times 12 = 0.54 L \quad \text{(inches for L in ft)}
+G_{d,\text{min}}(L) = 0.045 \times L \times 12 = 0.54 L \quad \text{(inches for L in ft)}
 $$
 
 $$
-G_{d,final} = \max\left( G_{d,min}(L), \; \frac{\text{round}(2.0 \times G_{d,raw})}{2.0} \right)
+G_{d,\text{final}} = \max\left( G_{d,\text{min}}(L), \; \frac{\text{round}(2.0 \times G_{d,\text{raw}})}{2.0} \right)
 $$
 * **Explanation:** Enforces the AASHTO minimum height requirement (0.045 · L). The lower bound is applied **after** rounding to the nearest 0.5-inch increment to prevent rounding below the code minimum.
 
 ### Equation 6.2: Discrete Girder Count Bounding (N_g)
 $$
-N_{g,final} = \max\left(6, \; \min\left(13, \; \text{round}(N_{g,raw})\right)\right)
+N_{g,\text{final}} = \max\left(6, \; \min\left(13, \; \text{round}(N_{g,\text{raw}})\right)\right)
 $$
 * **Explanation:** Rounds raw model predictions to the nearest integer and clips within standard bridge girder counts [6, 13].
 
 ### Equation 6.3: Prestressing Strand Count Even-Integer Bounding (N_s)
 $$
-N_{s,final} = \max\left(32, \; \min\left(122, \; 2 \times \text{round}\left( \frac{N_{s,raw}}{2.0} \right)\right)\right)
+N_{s,\text{final}} = \max\left(32, \; \min\left(122, \; 2 \times \text{round}\left( \frac{N_{s,\text{raw}}}{2.0} \right)\right)\right)
 $$
 * **Explanation:** Rounds raw strand counts to the nearest even integer (required for cross-sectional symmetry) and clips to [32, 122].
 
 ### Equation 6.4: Bottom Flange Depth Snapping (P)
 $$
-P_{final} = \max\left(0.0, \; \frac{\text{round}(2.0 \times P_{raw})}{2.0}\right)
+P_{\text{final}} = \max\left(0.0, \; \frac{\text{round}(2.0 \times P_{\text{raw}})}{2.0}\right)
 $$
 * **Explanation:** Snaps flange depth to 0.5-inch construction increments.
 
 ### Equation 6.5: Bottom Flange Width Snapping (Q)
 $$
-Q_{final} = \max\left(6.0, \; \frac{\text{round}(2.0 \times Q_{raw})}{2.0}\right)
+Q_{\text{final}} = \max\left(6.0, \; \frac{\text{round}(2.0 \times Q_{\text{raw}})}{2.0}\right)
 $$
 * **Explanation:** Snaps flange width to 0.5-inch construction increments with a 6.0-inch physical lower bound.
 
 ### Equation 6.6: Lateral Girder Spacing Snapping (S)
 $$
-S_{final} = \max\left(2.0, \; \frac{\text{round}(4.0 \times S_{raw})}{4.0}\right)
+S_{\text{final}} = \max\left(2.0, \; \frac{\text{round}(4.0 \times S_{\text{raw}})}{4.0}\right)
 $$
 * **Explanation:** Snaps lateral girder spacing to 0.25-foot (3-inch) grid increments with a 2.0-foot lower bound.
 
 ### Equation 6.7: Harping Position Boundary (H_p)
 $$
-H_{p,final} = \max\left(0.0, \; \min\left(L, \; \frac{\text{round}(2.0 \times H_{p,raw})}{2.0}\right)\right)
+H_{p,\text{final}} = \max\left(0.0, \; \min\left(L, \; \frac{\text{round}(2.0 \times H_{p,\text{raw}})}{2.0}\right)\right)
 $$
 * **Explanation:** Restricts harping point location to the physical bridge span range [0, L], snapped to 0.5-foot increments.
 
@@ -250,37 +250,37 @@ When the backend API server is unreachable, the Web UI ([ui/app.js](file:///e:/c
 
 ### Girder Depth (G_d)
 $$
-G_{d,client} = \max\left(0.54 L, \; \frac{\text{round}(2.0 \times (45.0 + 0.18 L - 0.005 C_c + 2.5 C_p))}{2.0}\right)
+G_{d,\text{client}} = \max\left(0.54 L, \; \frac{\text{round}(2.0 \times (45.0 + 0.18 L - 0.005 C_c + 2.5 C_p))}{2.0}\right)
 $$
 
 ### Lateral Spacing (S)
 $$
-S_{client} = \max\left(2.0, \; \frac{\text{round}(100.0 \times (5.0 + 0.015 L - 0.001 C_c + 0.4 C_s))}{100.0}\right)
+S_{\text{client}} = \max\left(2.0, \; \frac{\text{round}(100.0 \times (5.0 + 0.015 L - 0.001 C_c + 0.4 C_s))}{100.0}\right)
 $$
 
 ### Number of Girders (N_g)
 $$
-N_{g,client} = \max\left(6, \; \min\left(13, \; \text{round}(6.0 + 0.02 L - 0.002 C_c)\right)\right)
+N_{g,\text{client}} = \max\left(6, \; \min\left(13, \; \text{round}(6.0 + 0.02 L - 0.002 C_c)\right)\right)
 $$
 
 ### Bottom Flange Depth (P)
 $$
-P_{client} = \max\left(4.0, \; \frac{\text{round}(2.0 \times (6.2 + 0.025 L + 0.2 C_p))}{2.0}\right)
+P_{\text{client}} = \max\left(4.0, \; \frac{\text{round}(2.0 \times (6.2 + 0.025 L + 0.2 C_p))}{2.0}\right)
 $$
 
 ### Bottom Flange Width (Q)
 $$
-Q_{client} = \max\left(16.0, \; \frac{\text{round}(2.0 \times (22.0 + 0.14 L + 0.8 C_p))}{2.0}\right)
+Q_{\text{client}} = \max\left(16.0, \; \frac{\text{round}(2.0 \times (22.0 + 0.14 L + 0.8 C_p))}{2.0}\right)
 $$
 
 ### Prestressing Strands (N_s)
 $$
-N_{s,client} = \max\left(32, \; \min\left(122, \; 2 \times \text{round}\left(\frac{20.0 + 0.38 L + 0.002 L^2 - 0.01 C_c + 4.5 C_p}{2.0}\right)\right)\right)
+N_{s,\text{client}} = \max\left(32, \; \min\left(122, \; 2 \times \text{round}\left(\frac{20.0 + 0.38 L + 0.002 L^2 - 0.01 C_c + 4.5 C_p}{2.0}\right)\right)\right)
 $$
 
 ### Harping Position (H_p)
 $$
-H_{p,client} = \frac{\text{round}\left(10.0 \times \left(0.35 L + 0.05 \cdot \frac{L \cdot C_p}{C_c}\right)\right)}{10.0}
+H_{p,\text{client}} = \frac{\text{round}\left(10.0 \times \left(0.35 L + 0.05 \cdot \frac{L \cdot C_p}{C_c}\right)\right)}{10.0}
 $$
 
 ---
