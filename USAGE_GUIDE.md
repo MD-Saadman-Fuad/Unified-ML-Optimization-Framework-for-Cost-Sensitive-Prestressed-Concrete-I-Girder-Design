@@ -1,4 +1,4 @@
-﻿# Detailed Development Breakdown & User Usage Guide
+# Detailed Development Breakdown & User Usage Guide
 ## Unified ML Optimization Framework for Cost-Sensitive Prestressed Concrete I-Girder Design
 
 ---
@@ -28,7 +28,7 @@ This framework replaces traditional, computationally expensive iterative structu
                              ▼
 ┌─────────────────────────────────────────────────────────┐
 │        3. AASHTO PHYSICS & CODE POST-PROCESSING         │
-│  Girder Depth Gd >= L/20 | Even Strands Ns | Ng integer │
+│ Girder Depth Gd >= 0.045*L | Even Strands Ns | Ng integer │
 └────────────────────────────┬────────────────────────────┘
                              │
                              ▼
@@ -76,7 +76,7 @@ Encapsulates 8 domain-engineered physical features based on structural mechanics
 
 ### Phase 5: AASHTO Physics & Code Constraint Enforcement (`src/postprocess/constraints.py`)
 Applies post-processing constraints to raw model predictions:
-- **AASHTO Code Minimum Depth:** Enforces $G_{d,min} = \frac{L_{ft}}{20} \times 12$ inches.
+- **AASHTO Code Minimum Depth:** Enforces $G_{d,min} = 0.045 \times L_{ft} \times 12$ inches.
 - **Strand Rounding:** Rounds $N_s$ to the nearest EVEN integer (`[32, 122]`).
 - **Girder Count Rounding:** Rounds $N_g$ to integer (`[6, 13]`).
 - **Dimension Snapping:** Snaps flange depth/width and lateral spacing to practical construction increments.

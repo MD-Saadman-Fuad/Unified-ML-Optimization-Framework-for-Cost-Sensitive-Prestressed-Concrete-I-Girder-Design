@@ -1,4 +1,4 @@
-﻿"""
+"""
 Physical and AASHTO structural code constraint enforcement module.
 """
 import sys
@@ -34,14 +34,13 @@ def enforce_constraints(pred: dict, L_ft: float) -> dict:
         even_ns = int(round(ns_val / 2.0) * 2)
         out["Number of strand per girder"] = max(32, min(122, even_ns))
 
-    # 3. AASHTO Code Bound: Minimum Girder Depth Gd >= L / 20 (both in feet; convert Gd to inches)
-    # Min depth in inches = (L_ft / 20) * 12
+    # 3. AASHTO Code Bound: Minimum Girder Depth Gd >= 0.045 * L (both in feet; convert Gd to inches)
+    # Min depth in inches = 0.045 * L_ft * 12
     if "Gir Dep (in)" in out:
-        min_gd_in = (L_ft / 20.0) * 12.0
-        if out["Gir Dep (in)"] < min_gd_in:
-            out["Gir Dep (in)"] = min_gd_in
+        min_gd_in = 0.045 * L_ft * 12.0
         # Snap girder depth to nearest 0.5 in increment
-        out["Gir Dep (in)"] = round(out["Gir Dep (in)"] * 2.0) / 2.0
+        snapped = round(out["Gir Dep (in)"] * 2.0) / 2.0
+        out["Gir Dep (in)"] = max(min_gd_in, snapped)
 
     # 4. Constructibility Snapping for flange dimensions
     if "bot flange bot part depth (in)" in out:

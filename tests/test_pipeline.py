@@ -1,4 +1,4 @@
-﻿"""
+"""
 Unit tests for data pipeline, feature engineering, and constraint enforcement.
 """
 import os
@@ -39,7 +39,7 @@ def test_build_features():
 
 def test_enforce_constraints():
     raw_pred = {
-        "Gir Dep (in)": 50.0,  # Below AASHTO L/20 = 140/20*12 = 84 in for 140ft span
+        "Gir Dep (in)": 50.0,  # Below AASHTO 0.045*L = 0.045*140*12 = 75.6 in for 140ft span
         "Lat Spac (ft)": 6.13,
         "No. of Gir": 7.6,
         "bot flange bot part depth (in)": 8.12,
@@ -50,8 +50,8 @@ def test_enforce_constraints():
     L_ft = 140.0
     processed = enforce_constraints(raw_pred, L_ft)
 
-    # AASHTO depth min: 140 / 20 * 12 = 84.0 inches
-    assert processed["Gir Dep (in)"] >= 84.0
+    # AASHTO depth min: 0.045 * 140 * 12 = 75.6 inches
+    assert processed["Gir Dep (in)"] >= 75.6
     # No. of Gir should round to 8
     assert processed["No. of Gir"] == 8
     # Strands should round to even integer 72

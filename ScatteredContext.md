@@ -334,10 +334,10 @@ d
 AASHTO Code Boundary Checks: Enforce hard bounds like minimum web thickness W 
 w
 ​
- ≥150 mm and girder depth ratios G 
+ ≥150 mm and girder depth ratios G 
 d
 ​
- ≥L/20.  
+ ≥0.045×L.  
 
 Phase 6: Web UI Integration & Dynamic SVG Rendering
 Wrap the trained model or derived equations into a single-page web calculator modal:

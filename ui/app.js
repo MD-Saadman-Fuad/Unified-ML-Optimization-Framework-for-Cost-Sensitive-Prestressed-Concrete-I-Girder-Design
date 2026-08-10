@@ -123,7 +123,7 @@ function computeClientRSM(inp) {
     let Hp = 0.35 * L + 0.05 * (L * Cp / Cc);
 
     // AASHTO & Physical Post-Processing
-    const minGd = (L / 20.0) * 12.0;
+    const minGd = 0.045 * L * 12.0;
     if (Gd < minGd) Gd = minGd;
 
     Gd = Math.round(Gd * 2.0) / 2.0;
@@ -148,7 +148,7 @@ function computeClientRSM(inp) {
 // Update UI Text Cards & SVG Cross-Section
 function updateUI(data, L_ft) {
     elements.valGd.innerHTML = `${data.Gir_Dep_in.toFixed(1)} <span class="unit">in</span>`;
-    elements.valGdMin.innerText = ((L_ft / 20.0) * 12.0).toFixed(1);
+    elements.valGdMin.innerText = (0.045 * L_ft * 12.0).toFixed(1);
     elements.valS.innerHTML = `${data.Lat_Spac_ft.toFixed(2)} <span class="unit">ft</span>`;
     elements.valNg.innerHTML = `${data.No_of_Gir} <span class="unit">girders</span>`;
     elements.valP.innerHTML = `${data.bot_flange_depth_in.toFixed(1)} <span class="unit">in</span>`;
@@ -156,12 +156,14 @@ function updateUI(data, L_ft) {
     elements.valNs.innerHTML = `${data.Number_of_strands} <span class="unit">strands</span>`;
     elements.valHp.innerHTML = `${data.Harp_Pos_ft.toFixed(1)} <span class="unit">ft</span>`;
 
-    renderSVG(data, L_ft);
+    // SVG rendering disabled for max performance and faster calculation speed
+    // if (elements.svg) renderSVG(data, L_ft);
 }
 
 // Parametric SVG Canvas Renderer
 function renderSVG(d, L_ft) {
     const svg = elements.svg;
+    if (!svg) return;
     const width = 500;
     const height = 550;
 

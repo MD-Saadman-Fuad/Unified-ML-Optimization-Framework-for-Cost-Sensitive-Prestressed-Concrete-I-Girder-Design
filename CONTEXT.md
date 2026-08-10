@@ -1,4 +1,4 @@
-﻿# Agent Context — Unified ML Optimization Framework for Prestressed Concrete I-Girder Design
+# Agent Context — Unified ML Optimization Framework for Prestressed Concrete I-Girder Design
 
 > This document is the authoritative context for AI agents and developers working on this codebase.
 > Read this fully before making any code changes.
@@ -289,8 +289,8 @@ def enforce_constraints(pred: dict, L_ft: float) -> dict:
     pred['Ng'] = int(round(pred['Ng']))
     pred['Ns'] = int(round(pred['Ns'] / 2) * 2)   # round to nearest even int
 
-    # AASHTO minimum girder depth: Gd >= L/20  (both in feet; convert Gd to ft first)
-    min_gd_in = (L_ft / 20) * 12    # L/20 in feet, convert to inches
+    # AASHTO minimum girder depth: Gd >= 0.045 * L  (both in feet; convert Gd to ft first)
+    min_gd_in = 0.045 * L_ft * 12    # 0.045 * L in feet, convert to inches
     if pred['Gd'] < min_gd_in:
         pred['Gd'] = min_gd_in       # clip to minimum, do not raise
 
@@ -319,7 +319,7 @@ Request (all imperial units):
 
 Response:
 {
-  "Gir_Dep_in":  69.5,   # inches
+  "Gir_Dep_in":  75.6,   # inches
   "Lat_Spac_ft":  6.14,  # feet
   "No_of_Gir":    7,     # integer
   "Bot_flange_depth_in": 8.2,   # inches
@@ -371,6 +371,6 @@ class PredictRequest(BaseModel):
 4. **Ng is integer, Ns is even integer** — always apply rounding before reporting output.
 5. **5 outlier rows in sheet 160** — `No. of Gir > 20`; drop them before any processing.
 6. **Ignore `Gir + Deck Dep (in)` and `Deck thickness (in)`** — these are derived/extra columns.
-7. **AASHTO minimum depth is Gd >= L/20** — enforce in post-processing in inches.
+7. **AASHTO minimum depth is Gd >= 0.045 * L** — enforce in post-processing in inches.
 8. **Stochastic data** — 5 runs per cost+span combination means natural variance. The model predicts the expected optimum, not a single deterministic value.
 9. **Span_ft is not a column in the Excel file** — it must be added programmatically from the sheet name during loading.

@@ -1,4 +1,4 @@
-﻿# Project Roadmap — Unified ML Optimization Framework
+# Project Roadmap — Unified ML Optimization Framework
 
 > Structured 6-Phase Engineering Pipeline
 > Target: R2 > 0.98, RMSE < 2% across all 7 structural design outputs
@@ -199,7 +199,7 @@ All units remain imperial throughout this phase.
 - [ ] **5.1** Write `src/postprocess/constraints.py` with `enforce_constraints(pred: dict, L_ft: float) -> dict`:
   - Round `Ng` to nearest integer (valid range: 6–13)
   - Round `Ns` to nearest even integer (valid range: 32–122)
-  - Enforce AASHTO minimum depth: `Gd_in >= (L_ft / 20) * 12` (convert L/20 from ft to in)
+  - Enforce AASHTO minimum depth: `Gd_in >= 0.045 * L_ft * 12` (convert 0.045*L from ft to in)
   - Clip violations (do not raise) — clip to minimum valid value and log warning
 - [ ] **5.2** Apply constraint enforcement to all test-set predictions; count and log how many predictions violated each rule
 - [ ] **5.3** Log pre/post constraint metrics to `reports/constraint_analysis.csv`

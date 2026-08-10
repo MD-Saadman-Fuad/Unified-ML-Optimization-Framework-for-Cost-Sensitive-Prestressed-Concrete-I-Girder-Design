@@ -1,4 +1,4 @@
-﻿/* Modern Dark Glassmorphism Styling */
+/* Modern Dark Glassmorphism Styling */
 :root {
     --bg-dark: #0b0f19;
     --card-bg: rgba(17, 24, 39, 0.75);
@@ -111,7 +111,7 @@ h1 {
 /* Main Grid Layout */
 .main-grid {
     display: grid;
-    grid-template-columns: 360px 1fr 340px;
+    grid-template-columns: 420px 1fr;
     gap: 1.5rem;
 }
 
