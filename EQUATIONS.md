@@ -299,7 +299,7 @@ $$
 
 ### Equation 8.3: RMSE Percentage of Range (RMSE % of Range)
 $$
-\text{RMSE}_{\text{pct\_range}} = \left( \frac{\text{RMSE}}{y_{\max} - y_{\min}} \right) \times 100
+\text{RMSE}_{\text{pct-range}} = \left( \frac{\text{RMSE}}{y_{\max} - y_{\min}} \right) \times 100
 $$
 
 ### Equation 8.4: Mean Absolute Percentage Error (MAPE)
