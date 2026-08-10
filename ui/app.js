@@ -96,10 +96,13 @@ async function triggerCompute() {
             updateUI(data, inputs.Span_ft);
             return;
         } else {
-            throw new Error(`API status: ${res.status}`);
+            console.warn(`Backend API returned status ${res.status}. Seamlessly using client-side RSM solver fallback.`);
+            const fallbackData = computeClientRSM(inputs);
+            currentPredictions = fallbackData;
+            updateUI(fallbackData, inputs.Span_ft);
         }
     } catch (e) {
-        // Fallback to high-precision client-side Response Surface equations if API is offline or 502
+        console.warn(`Backend API unreachable (${e.message}). Using client-side RSM solver fallback.`);
         const fallbackData = computeClientRSM(inputs);
         currentPredictions = fallbackData;
         updateUI(fallbackData, inputs.Span_ft);
@@ -147,22 +150,25 @@ function computeClientRSM(inp) {
 
 // Update UI Text Cards & SVG Cross-Section
 function updateUI(data, L_ft) {
-    elements.valGd.innerHTML = `${data.Gir_Dep_in.toFixed(1)} <span class="unit">in</span>`;
-    elements.valGdMin.innerText = (0.045 * L_ft * 12.0).toFixed(1);
-    elements.valS.innerHTML = `${data.Lat_Spac_ft.toFixed(2)} <span class="unit">ft</span>`;
-    elements.valNg.innerHTML = `${data.No_of_Gir} <span class="unit">girders</span>`;
-    elements.valP.innerHTML = `${data.bot_flange_depth_in.toFixed(1)} <span class="unit">in</span>`;
-    elements.valQ.innerHTML = `${data.bot_flange_width_in.toFixed(1)} <span class="unit">in</span>`;
-    elements.valNs.innerHTML = `${data.Number_of_strands} <span class="unit">strands</span>`;
-    elements.valHp.innerHTML = `${data.Harp_Pos_ft.toFixed(1)} <span class="unit">ft</span>`;
+    if (elements.valGd) elements.valGd.innerHTML = `${data.Gir_Dep_in.toFixed(1)} <span class="unit">in</span>`;
+    if (elements.valGdMin) elements.valGdMin.innerText = (0.045 * L_ft * 12.0).toFixed(1);
+    if (elements.valS) elements.valS.innerHTML = `${data.Lat_Spac_ft.toFixed(2)} <span class="unit">ft</span>`;
+    if (elements.valNg) elements.valNg.innerHTML = `${data.No_of_Gir} <span class="unit">girders</span>`;
+    if (elements.valP) elements.valP.innerHTML = `${data.bot_flange_depth_in.toFixed(1)} <span class="unit">in</span>`;
+    if (elements.valQ) elements.valQ.innerHTML = `${data.bot_flange_width_in.toFixed(1)} <span class="unit">in</span>`;
+    if (elements.valNs) elements.valNs.innerHTML = `${data.Number_of_strands} <span class="unit">strands</span>`;
+    if (elements.valHp) elements.valHp.innerHTML = `${data.Harp_Pos_ft.toFixed(1)} <span class="unit">ft</span>`;
 
-    // SVG rendering disabled for max performance and faster calculation speed
-    // if (elements.svg) renderSVG(data, L_ft);
+    // Render SVG only if SVG container exists in DOM
+    const svgElem = document.getElementById('girder-svg');
+    if (svgElem) {
+        renderSVG(data, L_ft);
+    }
 }
 
 // Parametric SVG Canvas Renderer
 function renderSVG(d, L_ft) {
-    const svg = elements.svg;
+    const svg = document.getElementById('girder-svg');
     if (!svg) return;
     const width = 500;
     const height = 550;
