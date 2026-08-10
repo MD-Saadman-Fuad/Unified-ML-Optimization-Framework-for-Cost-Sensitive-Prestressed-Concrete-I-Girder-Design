@@ -50,8 +50,9 @@ MODEL = None
 
 def get_artifacts():
     global SCALER, MODEL
-    scaler_path = "models/scaler.pkl"
-    model_path = "models/best_model.pkl"
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    scaler_path = os.path.join(base_dir, "models", "scaler.pkl")
+    model_path = os.path.join(base_dir, "models", "best_model.pkl")
 
     if SCALER is None and os.path.exists(scaler_path):
         SCALER = joblib.load(scaler_path)

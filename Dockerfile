@@ -1,4 +1,4 @@
-﻿# Dockerfile for Prestressed Concrete I-Girder ML Optimization Framework
+# Dockerfile for Prestressed Concrete I-Girder ML Optimization Framework
 FROM python:3.10-slim
 
 WORKDIR /app
@@ -18,5 +18,5 @@ COPY . .
 # Expose FastAPI port
 EXPOSE 8000
 
-# Run FastAPI backend with Uvicorn
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run FastAPI backend with Uvicorn (binds to Render's dynamic $PORT env var)
+CMD ["python", "api/main.py"]
