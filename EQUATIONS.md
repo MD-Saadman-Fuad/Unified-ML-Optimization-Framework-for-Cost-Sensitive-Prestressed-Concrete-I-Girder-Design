@@ -19,7 +19,7 @@
 ### Target Output Variables (Y_target)
 | Symbol | Column Name | Description | Units | Type / Bounds |
 |---|---|---|---|---|
-| G_d | `Gir Dep (in)` | Girder Total Depth | inches | Continuous, G_d ≥ 0.54 L |
+| G_d | `Gir Dep (in)` | Girder Total Depth | inches | Continuous, 45.0 ≤ G_d ≤ 72.0 |
 | S | `Lat Spac (ft)` | Lateral Spacing Between Girders | feet | Continuous, S ≥ 2.0 |
 | N_g | `No. of Gir` | Number of Girders | count | Integer in [6, 13] |
 | P | `bot flange bot part depth (in)` | Bottom Flange Bottom Depth | inches | Continuous, P ≥ 0.0 |
@@ -196,27 +196,26 @@ Harp Pos (ft) = +24.3191 -0.101973 * Concrete +4.769822 * Strand +25.886897 * Re
 
 Raw model predictions pass through post-processing functions (`src/postprocess/constraints.py`) to enforce physical bounds, construction tolerances, and AASHTO design standards.
 
-### Equation 6.1: AASHTO Minimum Girder Depth (G_d,min)
+### Equation 6.1: Girder Depth Physical Bounds (G_d)
 $$
-G_{d,\text{min}}(L) = 0.045 \times L \times 12 = 0.54 L \quad \text{(inches for L in ft)}
+G_{d,\text{final}} = \max\left(45.0, \; \min\left(72.0, \; \frac{\text{round}(2.0 \times G_{d,\text{raw}})}{2.0}\right)\right)
 $$
-
-$$
-G_{d,\text{final}} = \max\left( G_{d,\text{min}}(L), \; \frac{\text{round}(2.0 \times G_{d,\text{raw}})}{2.0} \right)
-$$
-* **Explanation:** Enforces the AASHTO minimum height requirement (0.045 · L). The lower bound is applied **after** rounding to the nearest 0.5-inch increment to prevent rounding below the code minimum.
+* **Explanation:** Snaps girder depth to the nearest 0.5-inch increment and clamps within the physically observed dataset bounds. The upper bound of **72.0 in** is the AASHTO Type VI standard beam maximum depth, which was the hard design variable constraint used in the optimization that generated this dataset. The commonly cited formula G_d ≥ 0.045 × L × 12 produces values up to 97.2 in for a 180-ft span — far exceeding the 72-in dataset maximum — and therefore does **not** apply here as a binding lower bound.
 
 ### Equation 6.2: Discrete Girder Count Bounding (N_g)
 $$
-N_{g,\text{final}} = \max\left(6, \; \min\left(13, \; \text{round}(N_{g,\text{raw}})\right)\right)
+N_{g,\text{final}} = \max\left(N_{g,\text{min}}(L), \; \min\left(11, \; \text{round}(N_{g,\text{raw}})\right)\right)
 $$
-* **Explanation:** Rounds raw model predictions to the nearest integer and clips within standard bridge girder counts [6, 13].
+$$
+N_{g,\text{min}}(L) = \begin{cases} 8 & L \geq 175\,\text{ft} \\ 6 & L < 175\,\text{ft} \end{cases}
+$$
+* **Explanation:** Rounds to nearest integer. Upper bound is **11** (actual maximum in averaged optimal designs, not 13 as previously stated). Span-aware lower bound: 180 ft span requires at least 8 girders (dataset minimum is 8 at that span).
 
 ### Equation 6.3: Prestressing Strand Count Even-Integer Bounding (N_s)
 $$
-N_{s,\text{final}} = \max\left(32, \; \min\left(122, \; 2 \times \text{round}\left( \frac{N_{s,\text{raw}}}{2.0} \right)\right)\right)
+N_{s,\text{final}} = \max\left(32, \; \min\left(108, \; 2 \times \text{round}\left( \frac{N_{s,\text{raw}}}{2.0} \right)\right)\right)
 $$
-* **Explanation:** Rounds raw strand counts to the nearest even integer (required for cross-sectional symmetry) and clips to [32, 122].
+* **Explanation:** Rounds to nearest even integer. Upper bound corrected to **108** (actual maximum in the averaged optimal design dataset; the raw dataset maximum of 122 appears only in stochastic outlier runs, not in the averaged optima).
 
 ### Equation 6.4: Bottom Flange Depth Snapping (P)
 $$
@@ -250,8 +249,9 @@ When the backend API server is unreachable, the Web UI ([ui/app.js](file:///e:/c
 
 ### Girder Depth (G_d)
 $$
-G_{d,\text{client}} = \max\left(0.54 L, \; \frac{\text{round}(2.0 \times (45.0 + 0.18 L - 0.005 C_c + 2.5 C_p))}{2.0}\right)
+G_{d,\text{client}} = \max\left(45.0, \; \min\left(72.0, \; \frac{\text{round}(2.0 \times (55.0 + 0.075 L - 0.002 C_c + 0.4 C_p))}{2.0}\right)\right)
 $$
+* **Note:** Hard-capped at 72.0 in (AASHTO Type VI beam maximum) and floored at 45.0 in. The previous formula using 0.045 × L × 12 as a minimum was incorrect — it forces outputs up to 97.2 in for 180-ft spans, exceeding the dataset maximum of 72.0 in.
 
 ### Lateral Spacing (S)
 $$
@@ -260,8 +260,10 @@ $$
 
 ### Number of Girders (N_g)
 $$
-N_{g,\text{client}} = \max\left(6, \; \min\left(13, \; \text{round}(6.0 + 0.02 L - 0.002 C_c)\right)\right)
+N_{g,\text{client}} = \begin{cases} 10 & L \geq 175\,\text{ft} \\ 7 & L < 175\,\text{ft} \end{cases}, \quad \text{clamped to } [6, 11]
 $$
+* **Note:** Ng is nearly constant at 6–7 for spans 100–160 ft (correlation with costs ≈ 0.01–0.05; only span matters). It jumps to 8–11 at 180 ft. Previous quadratic formula gave 12 for 100 ft (actual mean: 6.8) — corrected.
+
 
 ### Bottom Flange Depth (P)
 $$
@@ -274,9 +276,24 @@ Q_{\text{client}} = \max\left(16.0, \; \frac{\text{round}(2.0 \times (22.0 + 0.1
 $$
 
 ### Prestressing Strands (N_s)
+
+Piecewise-linear interpolation anchored at per-span means from averaged optimal dataset:
+
+| Span | Base N_s |
+|---|---|
+| 100 ft | 39 |
+| 120 ft | 55 |
+| 140 ft | 71 |
+| 160 ft | 92 |
+| 180 ft | 95 |
+
 $$
-N_{s,\text{client}} = \max\left(32, \; \min\left(122, \; 2 \times \text{round}\left(\frac{20.0 + 0.38 L + 0.002 L^2 - 0.01 C_c + 4.5 C_p}{2.0}\right)\right)\right)
+N_{s,\text{client}} = \text{Interp}(L) + \Delta_{Cc} + \Delta_{Cp}, \quad \text{clamped to } [32, 108]
 $$
+$$
+\Delta_{Cc} = 2 \times \text{round}\left(\frac{C_c - 505}{100} \cdot \frac{1}{2}\right), \quad \Delta_{Cp} = 2 \times \text{round}\left(\frac{C_p - 1.73}{0.5} \cdot \frac{-2}{2}\right)
+$$
+* **Note:** Strand count correlates at **0.97 with span** and barely with costs. The 140→160 ft jump (70→92) is nonlinear — a single linear L coefficient cannot capture it accurately.
 
 ### Harping Position (H_p)
 $$

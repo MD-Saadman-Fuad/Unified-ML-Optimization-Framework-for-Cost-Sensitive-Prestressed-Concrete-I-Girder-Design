@@ -1,4 +1,4 @@
-﻿"""
+"""
 Response Surface Methodology (RSM) 2nd-order polynomial equation derivation module.
 """
 import sys
@@ -12,14 +12,16 @@ from sklearn.metrics import r2_score, mean_squared_error
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from src.data.load_data import load_dataset, INPUT_COLS, TARGET_COLS
+from src.data.load_data import load_dataset_averaged, INPUT_COLS, TARGET_COLS
 
 def fit_rsm_equations(filepath: str = "Girder_Dataset.xlsx"):
     """
     Fits 2nd-order Response Surface Methodology models for each target variable
     and extracts closed-form explicit mathematical equations.
+    Uses the AVERAGED dataset (119 unique cost-span combinations) to eliminate
+    within-combination stochastic noise before fitting polynomial surfaces.
     """
-    df = load_dataset(filepath)
+    df = load_dataset_averaged(filepath)
     X_raw = df[INPUT_COLS].copy()
     Y_raw = df[TARGET_COLS].copy()
 

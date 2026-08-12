@@ -37,7 +37,7 @@ The file has 5 data sheets (one per span) plus one empty `Sheet3`. Sheet name = 
 | `160` | 160 | 2 (3rd row) | 130 |
 | `180` | 180 | 3 (4th row) | 135 |
 
-**Total usable rows: 670** (after dropping 5 outlier rows from sheet `160`).
+**Total usable rows: 595** (after dropping outlier rows from sheet `160` where `No. of Gir > 20`, filtering Rebar contamination rows where `Rebar = 1.26`, and dropping any remaining NaN rows in core columns).
 
 ---
 
@@ -86,7 +86,7 @@ All units are **imperial**. Do not assume SI.
 
 | Target | Min | Mean | Max | Notes |
 |--------|-----|------|-----|-------|
-| `Gir Dep (in)` | 47.6 | 68.2 | 77.5 | Smooth continuous range |
+| `Gir Dep (in)` | 47.6 | 68.0 | 72.0 | Hard-capped at 72.0 in (AASHTO Type VI standard beam depth limit) |
 | `Lat Spac (ft)` | 2.3 | 6.1 | 9.3 | Continuous |
 | `No. of Gir` | 6 | 7.7 | 13 | Integer, round model output |
 | `bot flange depth (in)` | 0.0 | 8.2 | 98.0 | Check if 0-value rows are valid |
@@ -178,10 +178,11 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
 ## Preprocessing Rules (Phase 2)
 
-- **Train/Test Split:** 80/20 on 670 rows = ~536 train / ~134 test
-- **Stratification:** Use `Span_ft` as the stratify key (ensures all 5 span values appear in both sets)
-- **Scaler:** Fit `StandardScaler` ONLY on training features; transform both train and test using it
-- **No target scaling** required for XGBoost/RF. Consider scaling targets if MLP loss is numerically unstable.
+- **Input data:** Use `load_dataset_averaged()` (not `load_dataset()`). This groups the 595 raw rows by (Concrete, Strand, Rebar, Span_ft) and averages target values, yielding **119 deterministic rows** — one per unique cost-span combination.
+- **Why average?** The raw dataset has 5 stochastic optimizer runs per combination. Without averaging, 100% of test combinations also appear in training (pure leakage), and R² measures noise prediction rather than signal. Averaging removes within-combination variance and enables genuine generalization.
+- **Train/Test Split:** Stratified 80/20 on 119 averaged rows = **~95 train / ~24 test**. Stratify by `Span_ft`.
+- **Scaler:** Fit `StandardScaler` ONLY on training features; transform both train and test using it.
+- **No target scaling** required for tree-based models.
 
 ```python
 from sklearn.model_selection import train_test_split
@@ -206,33 +207,36 @@ joblib.dump(scaler, 'models/scaler.pkl')
 
 ## Model Architecture (Phase 3)
 
-### Candidate Models (evaluate all three)
+### Candidate Models
 
-#### 1. MultiOutput XGBoost Regressor (Primary)
-```python
-from sklearn.multioutput import MultiOutputRegressor
-from xgboost import XGBRegressor
-
-model = MultiOutputRegressor(
-    XGBRegressor(
-        max_depth=5,
-        learning_rate=0.05,
-        n_estimators=300,
-        subsample=0.85,
-        colsample_bytree=0.85,
-        random_state=42
-    )
-)
-```
-Tune with Optuna: max_depth in [3,8], learning_rate in [0.01,0.1], n_estimators in [100,500].
-
-#### 2. MultiOutput Random Forest Regressor
+#### 1. MultiOutput RandomForest Regressor (Primary — best for 95-row averaged data)
 ```python
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.multioutput import MultiOutputRegressor
 
 model = MultiOutputRegressor(RandomForestRegressor(n_estimators=300, random_state=42))
 ```
+Tune with Optuna: n_estimators [200,1000], max_depth [3,20], min_samples_split [2,10], min_samples_leaf [1,5], max_features ['sqrt','log2',None].
+5-fold CV R2 on averaged data: Ns≈0.96, LatSpac≈0.83, Ng≈0.75, Hp≈0.66, Q≈0.49, Gd≈0.37, P≈-0.14 (inherently noisy).
+
+#### 2. MultiOutput XGBoost Regressor (Baseline comparison)
+```python
+from sklearn.multioutput import MultiOutputRegressor
+from xgboost import XGBRegressor
+
+model = MultiOutputRegressor(
+    XGBRegressor(
+        max_depth=3,
+        learning_rate=0.1,
+        n_estimators=200,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        reg_lambda=5.0,
+        random_state=42
+    )
+)
+```
+> Note: XGBoost overfits on only 95 training rows unless heavily regularized (reg_lambda ≥ 5). RandomForest is preferred.
 
 #### 3. Multi-Task MLP (PyTorch)
 - Shared encoder: Linear(8 -> 128) -> ReLU -> Linear(128 -> 64) -> ReLU
@@ -369,8 +373,9 @@ class PredictRequest(BaseModel):
 2. **Column names have trailing spaces in raw Excel** — always strip after loading.
 3. **Units are imperial throughout** — inches, feet, $/yd3, $/lb. No SI conversion needed.
 4. **Ng is integer, Ns is even integer** — always apply rounding before reporting output.
-5. **5 outlier rows in sheet 160** — `No. of Gir > 20`; drop them before any processing.
+5. **Outlier rows in sheet 160** — `No. of Gir > 20`; drop them before any processing.
 6. **Ignore `Gir + Deck Dep (in)` and `Deck thickness (in)`** — these are derived/extra columns.
-7. **AASHTO minimum depth is Gd >= 0.045 * L** — enforce in post-processing in inches.
+7. **Girder depth is capped at 72.0 in** — the optimization used AASHTO Type VI standard beam sections with a 72-inch maximum depth. Do NOT use `0.045 * L * 12` as a minimum depth floor — that formula produces values up to 97.2 in for the 180-ft span which exceeds the dataset maximum. Apply bounds [45.0, 72.0] in for Gd in post-processing.
 8. **Stochastic data** — 5 runs per cost+span combination means natural variance. The model predicts the expected optimum, not a single deterministic value.
 9. **Span_ft is not a column in the Excel file** — it must be added programmatically from the sheet name during loading.
+10. **Strand count is span-dependent** — ranges are 32–50 (100 ft), 42–76 (120 ft), 58–90 (140 ft), 72–116 (160 ft), 68–122 (180 ft). Client-side formulas must reflect this linear-dominant relationship with span, not a quadratic one.

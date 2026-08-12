@@ -1,4 +1,4 @@
-﻿"""
+"""
 Data loading and cleaning module for Girder_Dataset.xlsx.
 """
 import os
@@ -69,6 +69,39 @@ def load_dataset(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
 
     combined = combined.reset_index(drop=True)
     return combined
+
+
+def load_dataset_averaged(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
+    """
+    Loads and returns the dataset averaged by cost-span combination.
+
+    The raw Excel dataset contains 5 stochastic optimizer runs per unique
+    (Concrete, Strand, Rebar, Span_ft) combination. Averaging across those runs
+    removes within-combination noise and yields ~119 deterministic design points,
+    one per unique cost-span combination. This is the correct representation for
+    training a surrogate ML model that predicts the *expected* optimal design.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the Excel file.
+
+    Returns
+    -------
+    pd.DataFrame
+        Averaged dataframe with INPUT_COLS + TARGET_COLS (119 rows).
+        Ng is rounded to nearest integer, Ns to nearest even integer after averaging.
+    """
+    df = load_dataset(filepath)
+    df_avg = df.groupby(INPUT_COLS)[TARGET_COLS].mean().reset_index()
+
+    # Re-apply discrete rounding after averaging
+    df_avg['No. of Gir'] = df_avg['No. of Gir'].round().astype(int)
+    df_avg['Number of strand per girder'] = (
+        (df_avg['Number of strand per girder'] / 2.0).round() * 2
+    ).astype(int)
+
+    return df_avg.reset_index(drop=True)
 
 if __name__ == "__main__":
     df_clean = load_dataset()

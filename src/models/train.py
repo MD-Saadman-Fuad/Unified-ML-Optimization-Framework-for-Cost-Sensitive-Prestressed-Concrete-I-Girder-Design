@@ -54,37 +54,41 @@ def calculate_metrics(Y_true: pd.DataFrame, Y_pred: np.ndarray) -> dict:
     metrics["mean_r2"] = round(float(np.mean(r2_scores)), 5)
     return metrics
 
-def optuna_tune_xgboost(X_train: pd.DataFrame, Y_train: pd.DataFrame, n_trials: int = 10) -> dict:
+def optuna_tune_randomforest(X_train: pd.DataFrame, Y_train: pd.DataFrame, n_trials: int = 30) -> dict:
     """
-    Optimizes XGBoost hyperparameters using Optuna cross-validation.
+    Optimizes RandomForest hyperparameters using Optuna.
+    RandomForest outperforms XGBoost on the small (~95 row) averaged dataset.
     """
     print(f"Starting Optuna hyperparameter optimization ({n_trials} trials)...")
 
     def objective(trial):
         params = {
-            "max_depth": trial.suggest_int("max_depth", 3, 9),
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.15, log=True),
-            "n_estimators": trial.suggest_int("n_estimators", 100, 600, step=50),
-            "subsample": trial.suggest_float("subsample", 0.6, 1.0),
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
-            "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 10.0, log=True),
-            "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 10.0, log=True),
-            "random_state": 42,
-            "n_jobs": -1
+            "n_estimators":   trial.suggest_int("n_estimators", 200, 1000, step=100),
+            "max_depth":      trial.suggest_int("max_depth", 3, 20),
+            "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
+            "min_samples_leaf":  trial.suggest_int("min_samples_leaf", 1, 5),
+            "max_features":   trial.suggest_categorical("max_features", ["sqrt", "log2", None]),
+            "random_state":   42,
+            "n_jobs":         -1
         }
-        
-        base_xgb = XGBRegressor(**params)
-        model = MultiOutputRegressor(base_xgb)
-        model.fit(X_train, Y_train)
-        
-        preds = model.predict(X_train)
-        mean_r2 = float(r2_score(Y_train, preds, multioutput="uniform_average"))
-        return mean_r2
+
+        from sklearn.model_selection import cross_val_score
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.pipeline import Pipeline
+
+        pipe = Pipeline([
+            ("sc", StandardScaler()),
+            ("m", MultiOutputRegressor(RandomForestRegressor(**params)))
+        ])
+        # 5-fold CV mean R2 across all targets
+        scores = cross_val_score(pipe, X_train, Y_train,
+                                 cv=5, scoring="r2", n_jobs=-1)
+        return float(scores.mean())
 
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=n_trials)
-    
-    print(f"Optuna tuning finished. Best Trial Mean R2 (train): {study.best_value:.5f}")
+
+    print(f"Optuna tuning finished. Best Trial CV-R2: {study.best_value:.5f}")
     print("Best Hyperparameters:", study.best_params)
     return study.best_params
 
@@ -141,20 +145,20 @@ def train_and_evaluate():
         benchmark_results[name] = metrics
         print(f"Model: {name:<20} | Test Mean R2: {metrics['mean_r2']:.5f}")
 
-    print("\n--- 2. Hyperparameter Optimization ---")
-    best_params = optuna_tune_xgboost(X_train, Y_train, n_trials=50)
+    print("\n--- 2. Hyperparameter Optimization (RandomForest — best on small averaged data) ---")
+    best_params = optuna_tune_randomforest(X_train, Y_train, n_trials=30)
 
-    print("\n--- 3. Training Best Tuned XGBoost Model ---")
-    best_xgb_base = XGBRegressor(**best_params, random_state=42, n_jobs=-1)
-    best_model = MultiOutputRegressor(best_xgb_base)
+    print("\n--- 3. Training Best Tuned RandomForest Model ---")
+    best_rf_base = RandomForestRegressor(**best_params, random_state=42, n_jobs=-1)
+    best_model = MultiOutputRegressor(best_rf_base)
     best_model.fit(X_train, Y_train)
 
     final_preds = best_model.predict(X_test)
     final_metrics = calculate_metrics(Y_test, final_preds)
-    benchmark_results["Tuned_XGBoost"] = final_metrics
+    benchmark_results["Tuned_RandomForest"] = final_metrics
 
     print("\n=======================================================")
-    print(f"FINAL TUNED XGBOOST TEST MEAN R²: {final_metrics['mean_r2']:.5f}")
+    print(f"FINAL TUNED RANDOMFOREST TEST MEAN R2: {final_metrics['mean_r2']:.5f}")
     print("=======================================================")
     for col in TARGET_COLS:
         m = final_metrics[col]

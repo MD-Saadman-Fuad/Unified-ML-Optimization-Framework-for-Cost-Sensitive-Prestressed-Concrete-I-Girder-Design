@@ -116,25 +116,65 @@ function computeClientRSM(inp) {
     const Cs = inp.Rebar;
     const L = inp.Span_ft;
 
-    // Derived physical response surfaces calibrated on 670 pre-optimized bridge runs
-    let Gd = 38.5 + 0.22 * L + 0.0004 * (L * L) - 0.005 * Cc + 0.8 * Cp;
-    let S = 5.2 + 0.012 * L + 0.0008 * Cc - 0.08 * Cs;
-    let Ng = Math.round(18.5 - 0.075 * L + 0.00005 * (L * L));
-    let P = 6.2 + 0.025 * L + 0.2 * Cp;
-    let Q = 22.0 + 0.14 * L + 0.8 * Cp;
-    let Ns = Math.round((20.0 + 0.38 * L + 0.002 * (L * L) - 0.01 * Cc + 4.5 * Cp) / 2.0) * 2;
-    let Hp = 0.35 * L + 0.05 * (L * Cp / Cc);
-
-    // AASHTO & Physical Post-Processing
-    const minGd = 0.045 * L * 12.0;
-    if (Gd < minGd) Gd = minGd;
-
+    // Girder Depth — calibrated on 595 pre-optimized bridge runs.
+    // Hard-capped at 72.0 in (AASHTO Type VI standard beam maximum depth limit
+    // observed throughout the dataset). Floor at 45.0 in.
+    let Gd = 55.0 + 0.075 * L - 0.002 * Cc + 0.4 * Cp;
     Gd = Math.round(Gd * 2.0) / 2.0;
+    Gd = Math.max(45.0, Math.min(72.0, Gd));
+
+    // Lateral Spacing
+    let S = 5.2 + 0.012 * L + 0.0008 * Cc - 0.08 * Cs;
     S = Math.round(S * 100.0) / 100.0;
-    Ng = Math.max(6, Math.min(13, Ng));
+    S = Math.max(2.0, S);
+
+    // Number of Girders — dataset analysis (averaged optima):
+    //   100-160ft: 6-7 girders (mean ~7)  |  180ft: 8-11 (mean ~10)
+    // Piecewise: flat 7 for short/mid spans, steps up at 180ft.
+    let Ng;
+    if (L >= 175) {
+        Ng = 10;   // 180ft: mean 9.9 in dataset
+    } else if (L >= 155) {
+        Ng = 7;    // 160ft: mean 7.0
+    } else {
+        Ng = 7;    // 100-140ft: mean 6.8-6.9, round to 7
+    }
+    Ng = Math.max(6, Math.min(11, Ng));
+
+    // Bottom Flange Depth
+    let P = 6.2 + 0.025 * L + 0.2 * Cp;
     P = Math.max(4.0, Math.round(P * 2.0) / 2.0);
+
+    // Bottom Flange Width
+    let Q = 22.0 + 0.14 * L + 0.8 * Cp;
     Q = Math.max(16.0, Math.round(Q * 2.0) / 2.0);
-    Ns = Math.max(32, Math.min(122, Ns));
+
+    // Prestressing Strand Count — piecewise-linear calibrated on averaged dataset.
+    // Per-span means (mid-cost): 39 (100ft), 55 (120ft), 71 (140ft), 92 (160ft), 95 (180ft).
+    // A single linear L-coefficient cannot fit the steep 140->160ft jump (70->92),
+    // so we interpolate between span anchor points.
+    let Ns;
+    if (L <= 100) {
+        Ns = 39;
+    } else if (L <= 120) {
+        Ns = Math.round((39 + (L - 100) / 20 * (55 - 39)) / 2) * 2;  // 39..55
+    } else if (L <= 140) {
+        Ns = Math.round((55 + (L - 120) / 20 * (71 - 55)) / 2) * 2;  // 55..71
+    } else if (L <= 160) {
+        Ns = Math.round((71 + (L - 140) / 20 * (92 - 71)) / 2) * 2;  // 71..92
+    } else if (L <= 180) {
+        Ns = Math.round((92 + (L - 160) / 20 * (95 - 92)) / 2) * 2;  // 92..95
+    } else {
+        Ns = 95;
+    }
+    // Adjust slightly for concrete cost (cheap concrete -> slightly more strands)
+    Ns += Math.round(((Cc - 505) / 100) * 1.0 / 2) * 2;
+    // Adjust for strand cost (expensive strand -> fewer strands)
+    Ns += Math.round(((Cp - 1.73) / 0.5) * (-2.0) / 2) * 2;
+    Ns = Math.max(32, Math.min(108, Ns));
+
+    // Harping Position
+    let Hp = 0.35 * L + 0.05 * (L * Cp / Cc);
     Hp = Math.round(Hp * 10.0) / 10.0;
 
     return {
@@ -237,36 +277,42 @@ function renderSVG(d, L_ft) {
     const harpRatio = Math.min(1.0, d.Harp_Pos_ft / L_ft);
     const harpY = topY + (Gd_px * 0.45);
 
-    svg.innerHTML = `
-        <!-- Grid Background -->
-        <defs>
-            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
-            </pattern>
-            <linearGradient id="girderGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="rgba(56, 189, 248, 0.25)"/>
-                <stop offset="100%" stop-color="rgba(99, 102, 241, 0.20)"/>
-            </linearGradient>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
+    try {
+        if (svg) {
+            svg.innerHTML = `
+                <!-- Grid Background -->
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                    </pattern>
+                    <linearGradient id="girderGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="rgba(56, 189, 248, 0.25)"/>
+                        <stop offset="100%" stop-color="rgba(99, 102, 241, 0.20)"/>
+                    </linearGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
 
-        <!-- Dimension Lines & Annotations -->
-        <line x1="${cX + Q_px/2 + 25}" y1="${topY}" x2="${cX + Q_px/2 + 25}" y2="${botY}" stroke="rgba(255,255,255,0.2)" stroke-dasharray="3,3"/>
-        <text x="${cX + Q_px/2 + 35}" y="${topY + Gd_px/2}" fill="#9ca3af" font-size="12" font-family="JetBrains Mono">Gd = ${d.Gir_Dep_in}"</text>
+                <!-- Dimension Lines & Annotations -->
+                <line x1="${cX + Q_px/2 + 25}" y1="${topY}" x2="${cX + Q_px/2 + 25}" y2="${botY}" stroke="rgba(255,255,255,0.2)" stroke-dasharray="3,3"/>
+                <text x="${cX + Q_px/2 + 35}" y="${topY + Gd_px/2}" fill="#9ca3af" font-size="12" font-family="JetBrains Mono">Gd = ${d.Gir_Dep_in}"</text>
 
-        <line x1="${cX - Q_px/2}" y1="${botY + 20}" x2="${cX + Q_px/2}" y2="${botY + 20}" stroke="rgba(255,255,255,0.2)" stroke-dasharray="3,3"/>
-        <text x="${cX}" y="${botY + 35}" fill="#9ca3af" font-size="12" font-family="JetBrains Mono" text-anchor="middle">Q = ${d.bot_flange_width_in}"</text>
+                <line x1="${cX - Q_px/2}" y1="${botY + 20}" x2="${cX + Q_px/2}" y2="${botY + 20}" stroke="rgba(255,255,255,0.2)" stroke-dasharray="3,3"/>
+                <text x="${cX}" y="${botY + 35}" fill="#9ca3af" font-size="12" font-family="JetBrains Mono" text-anchor="middle">Q = ${d.bot_flange_width_in}"</text>
 
-        <!-- Girder Solid Outline -->
-        <path d="${pathD}" fill="url(#girderGrad)" stroke="#38bdf8" stroke-width="2.5" stroke-linejoin="round"/>
+                <!-- Girder Solid Outline -->
+                <path d="${pathD}" fill="url(#girderGrad)" stroke="#38bdf8" stroke-width="2.5" stroke-linejoin="round"/>
 
-        <!-- Tendon Strands Grid -->
-        <g class="strands">${strandDots}</g>
+                <!-- Tendon Strands Grid -->
+                <g class="strands">${strandDots}</g>
 
-        <!-- Harping Position Reference Marker -->
-        <line x1="40" y1="${harpY}" x2="460" y2="${harpY}" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="5,4"/>
-        <text x="55" y="${harpY - 6}" fill="#f43f5e" font-size="11" font-weight="600" font-family="Inter">Harping Location (Hp = ${d.Harp_Pos_ft} ft)</text>
-    `;
+                <!-- Harping Position Reference Marker -->
+                <line x1="40" y1="${harpY}" x2="460" y2="${harpY}" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="5,4"/>
+                <text x="55" y="${harpY - 6}" fill="#f43f5e" font-size="11" font-weight="600" font-family="Inter">Harping Location (Hp = ${d.Harp_Pos_ft} ft)</text>
+            `;
+        }
+    } catch (e) {
+        // Element absent or disabled — ignore safely
+    }
 }
 
 // Export CSV Functionality
