@@ -1,0 +1,45 @@
+{
+  "Gir Dep (in)": {
+    "r2": 0.16231,
+    "rmse": 4.7678,
+    "rmse_pct_range": 20.7936,
+    "mape_pct": 5.3069
+  },
+  "Lat Spac (ft)": {
+    "r2": 0.50263,
+    "rmse": 0.7829,
+    "rmse_pct_range": 21.8474,
+    "mape_pct": 11.3931
+  },
+  "No. of Gir": {
+    "r2": 0.62539,
+    "rmse": 0.9955,
+    "rmse_pct_range": 16.5919,
+    "mape_pct": 11.0567
+  },
+  "bot flange bot part depth (in)": {
+    "r2": -0.09336,
+    "rmse": 3.2908,
+    "rmse_pct_range": 24.0103,
+    "mape_pct": 42.4326
+  },
+  "bot flange bot part width (in)": {
+    "r2": 0.16301,
+    "rmse": 13.3314,
+    "rmse_pct_range": 20.4435,
+    "mape_pct": 36.9009
+  },
+  "Number of strand per girder": {
+    "r2": 0.87714,
+    "rmse": 8.0203,
+    "rmse_pct_range": 10.0254,
+    "mape_pct": 8.4136
+  },
+  "Harp Pos (ft)": {
+    "r2": 0.13052,
+    "rmse": 11.1939,
+    "rmse_pct_range": 20.9762,
+    "mape_pct": 17.836
+  },
+  "mean_r2": 0.33823
+}

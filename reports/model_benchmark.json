@@ -1,182 +1,137 @@
 {
-  "RandomForest": {
+  "Primary_XGBoost_Alt1": {
     "Gir Dep (in)": {
-      "r2": 0.54221,
-      "rmse": 1.6981,
-      "rmse_pct_range": 18.2143,
-      "mape_pct": 2.0322
+      "r2": -0.04595,
+      "rmse": 2.9104,
+      "rmse_pct_range": 22.6483,
+      "mape_pct": 3.1538
     },
     "Lat Spac (ft)": {
-      "r2": 0.7412,
-      "rmse": 0.3798,
-      "rmse_pct_range": 14.7611,
-      "mape_pct": 4.3588
+      "r2": 0.62398,
+      "rmse": 0.5443,
+      "rmse_pct_range": 16.708,
+      "mape_pct": 8.0792
     },
     "No. of Gir": {
-      "r2": 0.53111,
-      "rmse": 0.7347,
-      "rmse_pct_range": 18.3664,
-      "mape_pct": 5.9501
+      "r2": 0.60962,
+      "rmse": 0.7285,
+      "rmse_pct_range": 14.5694,
+      "mape_pct": 8.6291
     },
     "bot flange bot part depth (in)": {
-      "r2": 0.12763,
-      "rmse": 1.4478,
-      "rmse_pct_range": 21.9752,
-      "mape_pct": 17.6951
+      "r2": -0.07297,
+      "rmse": 3.2944,
+      "rmse_pct_range": 29.9494,
+      "mape_pct": 35.2369
     },
     "bot flange bot part width (in)": {
-      "r2": 0.63837,
-      "rmse": 5.8256,
-      "rmse_pct_range": 18.164,
-      "mape_pct": 12.0607
+      "r2": 0.57598,
+      "rmse": 8.2022,
+      "rmse_pct_range": 19.9238,
+      "mape_pct": 25.7293
     },
     "Number of strand per girder": {
-      "r2": 0.96413,
-      "rmse": 4.2665,
-      "rmse_pct_range": 5.9257,
-      "mape_pct": 3.6419
+      "r2": 0.84912,
+      "rmse": 10.4682,
+      "rmse_pct_range": 12.766,
+      "mape_pct": 10.3961
     },
     "Harp Pos (ft)": {
-      "r2": 0.50426,
-      "rmse": 5.3604,
-      "rmse_pct_range": 19.9902,
-      "mape_pct": 8.2374
+      "r2": -0.04773,
+      "rmse": 13.981,
+      "rmse_pct_range": 28.0809,
+      "mape_pct": 21.158
     },
-    "mean_r2": 0.57841
+    "mean_r2": 0.35601
   },
-  "GradientBoosting": {
+  "RSM_Polynomial_Benchmark": {
     "Gir Dep (in)": {
-      "r2": 0.43195,
-      "rmse": 1.8916,
-      "rmse_pct_range": 20.2895,
-      "mape_pct": 2.2555
+      "r2": -0.39054,
+      "rmse": 3.3557,
+      "rmse_pct_range": 26.1139,
+      "mape_pct": 3.8392
     },
     "Lat Spac (ft)": {
-      "r2": 0.67948,
-      "rmse": 0.4226,
-      "rmse_pct_range": 16.427,
-      "mape_pct": 5.3102
+      "r2": 0.62605,
+      "rmse": 0.5428,
+      "rmse_pct_range": 16.662,
+      "mape_pct": 7.1718
     },
     "No. of Gir": {
-      "r2": 0.4584,
-      "rmse": 0.7896,
-      "rmse_pct_range": 19.739,
-      "mape_pct": 6.7957
+      "r2": 0.58507,
+      "rmse": 0.751,
+      "rmse_pct_range": 15.0205,
+      "mape_pct": 7.9162
     },
     "bot flange bot part depth (in)": {
-      "r2": -0.39227,
-      "rmse": 1.829,
-      "rmse_pct_range": 27.7616,
-      "mape_pct": 21.6239
+      "r2": 0.06638,
+      "rmse": 3.0731,
+      "rmse_pct_range": 27.937,
+      "mape_pct": 37.2441
     },
     "bot flange bot part width (in)": {
-      "r2": 0.48588,
-      "rmse": 6.9461,
-      "rmse_pct_range": 21.6575,
-      "mape_pct": 14.2774
+      "r2": 0.44106,
+      "rmse": 9.4172,
+      "rmse_pct_range": 22.8751,
+      "mape_pct": 26.5134
     },
     "Number of strand per girder": {
-      "r2": 0.96368,
-      "rmse": 4.2934,
-      "rmse_pct_range": 5.9631,
-      "mape_pct": 4.0166
+      "r2": 0.86839,
+      "rmse": 9.7769,
+      "rmse_pct_range": 11.923,
+      "mape_pct": 7.9748
     },
     "Harp Pos (ft)": {
-      "r2": 0.3929,
-      "rmse": 5.932,
-      "rmse_pct_range": 22.1218,
-      "mape_pct": 9.0575
+      "r2": 0.064,
+      "rmse": 13.2145,
+      "rmse_pct_range": 26.5414,
+      "mape_pct": 19.9456
     },
-    "mean_r2": 0.43143
+    "mean_r2": 0.32291
   },
-  "XGBoost_Default": {
+  "Secondary_Rank_Conditioned_XGBoost": {
     "Gir Dep (in)": {
-      "r2": 0.3795,
-      "rmse": 1.977,
-      "rmse_pct_range": 21.2055,
-      "mape_pct": 2.3092
+      "r2": 0.16231,
+      "rmse": 4.7678,
+      "rmse_pct_range": 20.7936,
+      "mape_pct": 5.3069
     },
     "Lat Spac (ft)": {
-      "r2": 0.6705,
-      "rmse": 0.4285,
-      "rmse_pct_range": 16.6557,
-      "mape_pct": 5.3166
+      "r2": 0.50263,
+      "rmse": 0.7829,
+      "rmse_pct_range": 21.8474,
+      "mape_pct": 11.3931
     },
     "No. of Gir": {
-      "r2": 0.47235,
-      "rmse": 0.7793,
-      "rmse_pct_range": 19.4832,
-      "mape_pct": 6.0693
+      "r2": 0.62539,
+      "rmse": 0.9955,
+      "rmse_pct_range": 16.5919,
+      "mape_pct": 11.0567
     },
     "bot flange bot part depth (in)": {
-      "r2": -0.53836,
-      "rmse": 1.9226,
-      "rmse_pct_range": 29.1818,
-      "mape_pct": 23.0927
+      "r2": -0.09336,
+      "rmse": 3.2908,
+      "rmse_pct_range": 24.0103,
+      "mape_pct": 42.4326
     },
     "bot flange bot part width (in)": {
-      "r2": 0.47714,
-      "rmse": 7.0049,
-      "rmse_pct_range": 21.8409,
-      "mape_pct": 14.0476
+      "r2": 0.16301,
+      "rmse": 13.3314,
+      "rmse_pct_range": 20.4435,
+      "mape_pct": 36.9009
     },
     "Number of strand per girder": {
-      "r2": 0.9652,
-      "rmse": 4.2026,
-      "rmse_pct_range": 5.8369,
-      "mape_pct": 4.083
+      "r2": 0.87714,
+      "rmse": 8.0203,
+      "rmse_pct_range": 10.0254,
+      "mape_pct": 8.4136
     },
     "Harp Pos (ft)": {
-      "r2": 0.43,
-      "rmse": 5.7479,
-      "rmse_pct_range": 21.4352,
-      "mape_pct": 8.6276
+      "r2": 0.13052,
+      "rmse": 11.1939,
+      "rmse_pct_range": 20.9762,
+      "mape_pct": 17.836
     },
-    "mean_r2": 0.40805
-  },
-  "Tuned_RandomForest": {
-    "Gir Dep (in)": {
-      "r2": 0.52049,
-      "rmse": 1.7379,
-      "rmse_pct_range": 18.6414,
-      "mape_pct": 2.1097
-    },
-    "Lat Spac (ft)": {
-      "r2": 0.80296,
-      "rmse": 0.3314,
-      "rmse_pct_range": 12.8797,
-      "mape_pct": 3.9053
-    },
-    "No. of Gir": {
-      "r2": 0.60092,
-      "rmse": 0.6778,
-      "rmse_pct_range": 16.944,
-      "mape_pct": 5.7425
-    },
-    "bot flange bot part depth (in)": {
-      "r2": 0.10254,
-      "rmse": 1.4685,
-      "rmse_pct_range": 22.289,
-      "mape_pct": 18.0796
-    },
-    "bot flange bot part width (in)": {
-      "r2": 0.66337,
-      "rmse": 5.6207,
-      "rmse_pct_range": 17.5249,
-      "mape_pct": 12.0533
-    },
-    "Number of strand per girder": {
-      "r2": 0.94921,
-      "rmse": 5.0771,
-      "rmse_pct_range": 7.0516,
-      "mape_pct": 5.4054
-    },
-    "Harp Pos (ft)": {
-      "r2": 0.57992,
-      "rmse": 4.9344,
-      "rmse_pct_range": 18.4017,
-      "mape_pct": 7.642
-    },
-    "mean_r2": 0.60277
+    "mean_r2": 0.33823
   }
 }

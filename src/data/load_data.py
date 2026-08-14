@@ -1,5 +1,6 @@
 """
 Data loading and cleaning module for Girder_Dataset.xlsx.
+Supports multi-alternative datasets, design ranking (1-5), and group family identification.
 """
 import os
 import pandas as pd
@@ -26,6 +27,7 @@ TARGET_COLS = [
 def load_dataset(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
     """
     Loads, cleans, and merges all span sheets from Girder_Dataset.xlsx.
+    Assigns Design_Rank (1-5) and Family_ID for group-based cross validation.
     
     Parameters
     ----------
@@ -58,7 +60,7 @@ def load_dataset(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
     combined = combined[[c for c in keep_cols if c in combined.columns]].copy()
 
     # Drop NaNs in core input and target columns
-    combined = combined.dropna(subset=INPUT_COLS + TARGET_COLS)
+    combined = combined.dropna(subset=INPUT_COLS + TARGET_COLS).copy()
 
     # Data Cleaning Filters:
     # 1. Filter out Rebar == 1.26 contamination (valid Rebar range is 2.18 - 3.45)
@@ -67,46 +69,44 @@ def load_dataset(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
     # 2. Filter out solver failure outliers where No. of Gir > 20 (valid range is 6 - 13)
     combined = combined[combined['No. of Gir'] <= 20].copy()
 
+    # Assign Design_Rank (1-5) based on sequence within each (Concrete, Strand, Rebar, Span_ft) family
+    combined['Design_Rank'] = combined.groupby(INPUT_COLS).cumcount() + 1
+    
+    # Assign unique string Family_ID for group-based train/test splitting
+    combined['Family_ID'] = (
+        combined['Concrete'].astype(str) + "_" +
+        combined['Strand'].astype(str) + "_" +
+        combined['Rebar'].astype(str) + "_" +
+        combined['Span_ft'].astype(str)
+    )
+
     combined = combined.reset_index(drop=True)
     return combined
 
+def load_primary_dataset(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
+    """
+    Loads only Alternative 1 (the optimal design for each cost-span combination).
+    Yields 135 deterministic optimal designs across 5 span lengths.
+    """
+    df = load_dataset(filepath)
+    df_primary = df[df['Design_Rank'] == 1].copy().reset_index(drop=True)
+    return df_primary
 
 def load_dataset_averaged(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
     """
-    Loads and returns the dataset averaged by cost-span combination.
-
-    The raw Excel dataset contains 5 stochastic optimizer runs per unique
-    (Concrete, Strand, Rebar, Span_ft) combination. Averaging across those runs
-    removes within-combination noise and yields ~119 deterministic design points,
-    one per unique cost-span combination. This is the correct representation for
-    training a surrogate ML model that predicts the *expected* optimal design.
-
-    Parameters
-    ----------
-    filepath : str
-        Path to the Excel file.
-
-    Returns
-    -------
-    pd.DataFrame
-        Averaged dataframe with INPUT_COLS + TARGET_COLS (119 rows).
-        Ng is rounded to nearest integer, Ns to nearest even integer after averaging.
+    Compatibility wrapper returning load_primary_dataset (Alternative 1).
     """
-    df = load_dataset(filepath)
-    df_avg = df.groupby(INPUT_COLS)[TARGET_COLS].mean().reset_index()
-
-    # Re-apply discrete rounding after averaging
-    df_avg['No. of Gir'] = df_avg['No. of Gir'].round().astype(int)
-    df_avg['Number of strand per girder'] = (
-        (df_avg['Number of strand per girder'] / 2.0).round() * 2
-    ).astype(int)
-
-    return df_avg.reset_index(drop=True)
+    return load_primary_dataset(filepath)
 
 if __name__ == "__main__":
     df_clean = load_dataset()
+    df_primary = load_primary_dataset()
     os.makedirs("data/processed", exist_ok=True)
     output_path = "data/processed/clean_dataset.csv"
     df_clean.to_csv(output_path, index=False)
-    print(f"[Phase 0] Data loading complete. Clean dataset shape: {df_clean.shape}")
-    print(f"Saved to {output_path}")
+    print(f"[Phase 0] Data loading complete.")
+    print(f"Clean all-alternative dataset shape: {df_clean.shape}")
+    print(f"Primary Alt-1 optimal dataset shape: {df_primary.shape}")
+    print(f"Design Ranks present: {sorted(df_clean['Design_Rank'].unique())}")
+    print(f"Unique Cost-Span Families: {df_clean['Family_ID'].nunique()}")
+

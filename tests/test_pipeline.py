@@ -39,7 +39,7 @@ def test_build_features():
 
 def test_enforce_constraints():
     raw_pred = {
-        "Gir Dep (in)": 50.0,  # Below AASHTO 0.045*L = 0.045*140*12 = 75.6 in for 140ft span
+        "Gir Dep (in)": 50.3,
         "Lat Spac (ft)": 6.13,
         "No. of Gir": 7.6,
         "bot flange bot part depth (in)": 8.12,
@@ -50,13 +50,18 @@ def test_enforce_constraints():
     L_ft = 140.0
     processed = enforce_constraints(raw_pred, L_ft)
 
-    # AASHTO depth min: 0.045 * 140 * 12 = 75.6 inches
-    assert processed["Gir Dep (in)"] >= 75.6
+    # Physical bounds [45.0, 72.0] and 0.5-in snapping
+    assert 45.0 <= processed["Gir Dep (in)"] <= 72.0
+    assert processed["Gir Dep (in)"] == 50.5
     # No. of Gir should round to 8
     assert processed["No. of Gir"] == 8
     # Strands should round to even integer 72
     assert processed["Number of strand per girder"] == 72
     assert processed["Number of strand per girder"] % 2 == 0
+    # Structural checks present and satisfied
+    assert "structural_checks" in processed
+    assert processed["structural_checks"]["all_satisfied"] is True
+
 
 def test_no_data_leakage():
     from src.preprocessing.split_and_scale import split_and_scale_data
