@@ -1,57 +1,156 @@
 {
-  "selected_degree": 2,
-  "metrics": {
-    "Gir Dep (in)": {
-      "r2": -0.39054,
-      "rmse": 3.3557,
-      "rmse_pct_range": 26.1139,
-      "mape_pct": 3.8392
+  "Gir Dep (in)": {
+    "r2": 0.2668,
+    "rmse": 2.8153,
+    "coefficients": {
+      "1": 83.142832,
+      "Concrete": -0.020601,
+      "Strand": 7.152648,
+      "Rebar": -12.943725,
+      "Span_ft": 0.038422,
+      "Concrete^2": -4e-06,
+      "Concrete Strand": 0.003564,
+      "Concrete Rebar": -0.000327,
+      "Concrete Span_ft": 0.000113,
+      "Strand^2": -2.217312,
+      "Strand Rebar": 2.087279,
+      "Strand Span_ft": -0.037582,
+      "Rebar^2": 1.043027,
+      "Rebar Span_ft": 0.013728,
+      "Span_ft^2": -0.00012
     },
-    "Lat Spac (ft)": {
-      "r2": 0.62605,
-      "rmse": 0.5428,
-      "rmse_pct_range": 16.662,
-      "mape_pct": 7.1718
-    },
-    "No. of Gir": {
-      "r2": 0.58507,
-      "rmse": 0.751,
-      "rmse_pct_range": 15.0205,
-      "mape_pct": 7.9162
-    },
-    "bot flange bot part depth (in)": {
-      "r2": 0.06638,
-      "rmse": 3.0731,
-      "rmse_pct_range": 27.937,
-      "mape_pct": 37.2441
-    },
-    "bot flange bot part width (in)": {
-      "r2": 0.44106,
-      "rmse": 9.4172,
-      "rmse_pct_range": 22.8751,
-      "mape_pct": 26.5134
-    },
-    "Number of strand per girder": {
-      "r2": 0.86839,
-      "rmse": 9.7769,
-      "rmse_pct_range": 11.923,
-      "mape_pct": 7.9748
-    },
-    "Harp Pos (ft)": {
-      "r2": 0.064,
-      "rmse": 13.2145,
-      "rmse_pct_range": 26.5414,
-      "mape_pct": 19.9456
-    },
-    "mean_r2": 0.32291
+    "formula": "Gir Dep (in) = +83.1428 -0.020601 * Concrete +7.152648 * Strand -12.943725 * Rebar +0.038422 * Span_ft -0.000004 * Concrete^2 +0.003564 * Concrete * Strand -0.000327 * Concrete * Rebar +0.000113 * Concrete * Span_ft -2.217312 * Strand^2 +2.087279 * Strand * Rebar -0.037582 * Strand * Span_ft +1.043027 * Rebar^2 +0.013728 * Rebar * Span_ft -0.000120 * Span_ft^2"
   },
-  "equations": {
-    "Gir Dep (in)": "+71.06242 -0.020344 * Concrete +7.893491 * Strand -8.705893 * Rebar +0.122648 * Span_ft +0.000014 * Concrete^2 +0.006713 * Concrete * Strand -0.009550 * Concrete * Rebar +0.000102 * Concrete * Span_ft -2.176881 * Strand^2 +2.001762 * Strand * Rebar -0.053133 * Strand * Span_ft +0.928253 * Rebar^2 +0.020485 * Rebar * Span_ft -0.000350 * Span_ft^2",
-    "Lat Spac (ft)": "+0.64403 -0.010881 * Concrete -2.671396 * Strand +0.206393 * Rebar +0.182138 * Span_ft +0.000006 * Concrete^2 +0.001331 * Concrete * Strand +0.000291 * Concrete * Rebar +0.000009 * Concrete * Span_ft +0.487666 * Strand^2 +0.421893 * Strand * Rebar -0.005089 * Strand * Span_ft -0.255218 * Rebar^2 +0.001521 * Rebar * Span_ft -0.000730 * Span_ft^2",
-    "No. of Gir": "+19.54775 +0.006179 * Concrete +3.594770 * Strand -1.243167 * Rebar -0.268704 * Span_ft -0.000006 * Concrete^2 -0.001291 * Concrete * Strand +0.000330 * Concrete * Rebar +0.000015 * Concrete * Span_ft -0.749205 * Strand^2 -0.702604 * Strand * Rebar +0.011161 * Strand * Span_ft +0.540114 * Rebar^2 -0.004616 * Rebar * Span_ft +0.001022 * Span_ft^2",
-    "bot flange bot part depth (in)": "+65.59647 -0.125293 * Concrete -19.922879 * Strand -1.837925 * Rebar -0.089477 * Span_ft +0.000068 * Concrete^2 +0.007052 * Concrete * Strand +0.015277 * Concrete * Rebar +0.000007 * Concrete * Span_ft +2.714105 * Strand^2 +1.249239 * Strand * Rebar +0.021118 * Strand * Span_ft -0.503944 * Rebar^2 -0.031778 * Rebar * Span_ft +0.000433 * Span_ft^2",
-    "bot flange bot part width (in)": "-114.63550 -0.174675 * Concrete -26.647727 * Strand +38.716400 * Rebar +2.128541 * Span_ft +0.000028 * Concrete^2 +0.077130 * Concrete * Strand +0.000168 * Concrete * Rebar -0.000007 * Concrete * Span_ft +8.258812 * Strand^2 -5.861074 * Strand * Rebar -0.188699 * Strand * Span_ft -4.807388 * Rebar^2 +0.004366 * Rebar * Span_ft -0.005408 * Span_ft^2",
-    "Number of strand per girder": "-30.60023 +0.026767 * Concrete -18.846565 * Strand -23.370936 * Rebar +1.242348 * Span_ft +0.000082 * Concrete^2 -0.034669 * Concrete * Strand +0.004429 * Concrete * Rebar -0.000426 * Concrete * Span_ft +8.058589 * Strand^2 +3.554151 * Strand * Rebar -0.029171 * Strand * Span_ft +0.913874 * Rebar^2 +0.086183 * Rebar * Span_ft -0.001606 * Span_ft^2",
-    "Harp Pos (ft)": "+123.29014 -0.381722 * Concrete -16.472668 * Strand +31.496369 * Rebar -0.456311 * Span_ft +0.000398 * Concrete^2 -0.015622 * Concrete * Strand +0.009523 * Concrete * Rebar -0.000044 * Concrete * Span_ft +12.372151 * Strand^2 -6.513975 * Strand * Rebar -0.013515 * Strand * Span_ft -1.545993 * Rebar^2 -0.137935 * Rebar * Span_ft +0.004092 * Span_ft^2"
+  "Lat Spac (ft)": {
+    "r2": 0.64684,
+    "rmse": 0.5953,
+    "coefficients": {
+      "1": 1.784489,
+      "Concrete": -0.010783,
+      "Strand": -2.410167,
+      "Rebar": -1.007049,
+      "Span_ft": 0.186585,
+      "Concrete^2": 5e-06,
+      "Concrete Strand": 0.000735,
+      "Concrete Rebar": 0.000903,
+      "Concrete Span_ft": 4e-06,
+      "Strand^2": 0.532316,
+      "Strand Rebar": 0.578765,
+      "Strand Span_ft": -0.009646,
+      "Rebar^2": -0.149206,
+      "Rebar Span_ft": 0.001965,
+      "Span_ft^2": -0.000711
+    },
+    "formula": "Lat Spac (ft) = +1.7845 -0.010783 * Concrete -2.410167 * Strand -1.007049 * Rebar +0.186585 * Span_ft +0.000005 * Concrete^2 +0.000735 * Concrete * Strand +0.000903 * Concrete * Rebar +0.000004 * Concrete * Span_ft +0.532316 * Strand^2 +0.578765 * Strand * Rebar -0.009646 * Strand * Span_ft -0.149206 * Rebar^2 +0.001965 * Rebar * Span_ft -0.000711 * Span_ft^2"
+  },
+  "No. of Gir": {
+    "r2": 0.66078,
+    "rmse": 0.8024,
+    "coefficients": {
+      "1": 15.937681,
+      "Concrete": 0.008322,
+      "Strand": 3.092541,
+      "Rebar": 1.217241,
+      "Span_ft": -0.266561,
+      "Concrete^2": -7e-06,
+      "Concrete Strand": -0.000708,
+      "Concrete Rebar": -0.000761,
+      "Concrete Span_ft": 2.3e-05,
+      "Strand^2": -0.753597,
+      "Strand Rebar": -0.856388,
+      "Strand Span_ft": 0.01666,
+      "Rebar^2": 0.267338,
+      "Rebar Span_ft": -0.005736,
+      "Span_ft^2": 0.000974
+    },
+    "formula": "No. of Gir = +15.9377 +0.008322 * Concrete +3.092541 * Strand +1.217241 * Rebar -0.266561 * Span_ft -0.000007 * Concrete^2 -0.000708 * Concrete * Strand -0.000761 * Concrete * Rebar +0.000023 * Concrete * Span_ft -0.753597 * Strand^2 -0.856388 * Strand * Rebar +0.016660 * Strand * Span_ft +0.267338 * Rebar^2 -0.005736 * Rebar * Span_ft +0.000974 * Span_ft^2"
+  },
+  "bot flange bot part depth (in)": {
+    "r2": 0.15994,
+    "rmse": 2.7479,
+    "coefficients": {
+      "1": 62.828682,
+      "Concrete": -0.130072,
+      "Strand": -16.523224,
+      "Rebar": -6.529182,
+      "Span_ft": 0.021519,
+      "Concrete^2": 7.9e-05,
+      "Concrete Strand": 0.010513,
+      "Concrete Rebar": 0.015256,
+      "Concrete Span_ft": -6.6e-05,
+      "Strand^2": 1.373272,
+      "Strand Rebar": 0.49022,
+      "Strand Span_ft": 0.033404,
+      "Rebar^2": 0.460124,
+      "Rebar Span_ft": -0.029624,
+      "Span_ft^2": 7e-05
+    },
+    "formula": "bot flange bot part depth (in) = +62.8287 -0.130072 * Concrete -16.523224 * Strand -6.529182 * Rebar +0.021519 * Span_ft +0.000079 * Concrete^2 +0.010513 * Concrete * Strand +0.015256 * Concrete * Rebar -0.000066 * Concrete * Span_ft +1.373272 * Strand^2 +0.490220 * Strand * Rebar +0.033404 * Strand * Span_ft +0.460124 * Rebar^2 -0.029624 * Rebar * Span_ft +0.000070 * Span_ft^2"
+  },
+  "bot flange bot part width (in)": {
+    "r2": 0.50591,
+    "rmse": 9.421,
+    "coefficients": {
+      "1": -130.096143,
+      "Concrete": -0.16554,
+      "Strand": 0.963922,
+      "Rebar": 42.114351,
+      "Span_ft": 1.910501,
+      "Concrete^2": 3.7e-05,
+      "Concrete Strand": 0.05127,
+      "Concrete Rebar": -0.00445,
+      "Concrete Span_ft": 0.00027,
+      "Strand^2": 3.728475,
+      "Strand Rebar": -7.057478,
+      "Strand Span_ft": -0.155231,
+      "Rebar^2": -4.661466,
+      "Rebar Span_ft": 0.009062,
+      "Span_ft^2": -0.005426
+    },
+    "formula": "bot flange bot part width (in) = -130.0961 -0.165540 * Concrete +0.963922 * Strand +42.114351 * Rebar +1.910501 * Span_ft +0.000037 * Concrete^2 +0.051270 * Concrete * Strand -0.004450 * Concrete * Rebar +0.000270 * Concrete * Span_ft +3.728475 * Strand^2 -7.057478 * Strand * Rebar -0.155231 * Strand * Span_ft -4.661466 * Rebar^2 +0.009062 * Rebar * Span_ft -0.005426 * Span_ft^2"
+  },
+  "Number of strand per girder": {
+    "r2": 0.89448,
+    "rmse": 7.824,
+    "coefficients": {
+      "1": -37.297496,
+      "Concrete": 0.094924,
+      "Strand": -34.429091,
+      "Rebar": -30.939646,
+      "Span_ft": 1.470538,
+      "Concrete^2": 1.3e-05,
+      "Concrete Strand": -0.01855,
+      "Concrete Rebar": 0.003594,
+      "Concrete Span_ft": -0.000655,
+      "Strand^2": 9.847265,
+      "Strand Rebar": 6.117189,
+      "Strand Span_ft": -0.0809,
+      "Rebar^2": 1.498056,
+      "Rebar Span_ft": 0.086992,
+      "Span_ft^2": -0.001633
+    },
+    "formula": "Number of strand per girder = -37.2975 +0.094924 * Concrete -34.429091 * Strand -30.939646 * Rebar +1.470538 * Span_ft +0.000013 * Concrete^2 -0.018550 * Concrete * Strand +0.003594 * Concrete * Rebar -0.000655 * Concrete * Span_ft +9.847265 * Strand^2 +6.117189 * Strand * Rebar -0.080900 * Strand * Span_ft +1.498056 * Rebar^2 +0.086992 * Rebar * Span_ft -0.001633 * Span_ft^2"
+  },
+  "Harp Pos (ft)": {
+    "r2": 0.40818,
+    "rmse": 9.928,
+    "coefficients": {
+      "1": 55.769127,
+      "Concrete": -0.194496,
+      "Strand": 11.805808,
+      "Rebar": 16.728914,
+      "Span_ft": -0.188895,
+      "Concrete^2": 0.000314,
+      "Concrete Strand": -0.032131,
+      "Concrete Rebar": -0.005851,
+      "Concrete Span_ft": -0.000275,
+      "Strand^2": 11.530049,
+      "Strand Rebar": -10.732524,
+      "Strand Span_ft": -0.065448,
+      "Rebar^2": 1.735102,
+      "Rebar Span_ft": -0.048012,
+      "Span_ft^2": 0.002947
+    },
+    "formula": "Harp Pos (ft) = +55.7691 -0.194496 * Concrete +11.805808 * Strand +16.728914 * Rebar -0.188895 * Span_ft +0.000314 * Concrete^2 -0.032131 * Concrete * Strand -0.005851 * Concrete * Rebar -0.000275 * Concrete * Span_ft +11.530049 * Strand^2 -10.732524 * Strand * Rebar -0.065448 * Strand * Span_ft +1.735102 * Rebar^2 -0.048012 * Rebar * Span_ft +0.002947 * Span_ft^2"
   }
 }

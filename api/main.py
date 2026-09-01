@@ -125,11 +125,11 @@ def predict_girder_design(req: PredictRequest):
         # 1. Feature Engineering
         X_feat = build_features(raw_df)
 
-        # 2. Scaling
-        X_scaled = scaler.transform(X_feat)
+        # 2. Scaling (preserve feature names as DataFrame to avoid scikit-learn warnings)
+        X_scaled_df = pd.DataFrame(scaler.transform(X_feat), columns=X_feat.columns)
 
         # 3. Model Inference
-        raw_preds_arr = model.predict(X_scaled)[0]
+        raw_preds_arr = model.predict(X_scaled_df)[0]
         raw_pred_dict = {col: float(val) for col, val in zip(TARGET_COLS, raw_preds_arr)}
 
         # 4. Enforce Physical & Code Constraints

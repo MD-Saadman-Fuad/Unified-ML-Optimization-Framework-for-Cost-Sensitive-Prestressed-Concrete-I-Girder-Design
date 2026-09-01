@@ -32,6 +32,9 @@
                     </div>
                 </div>
                 <div class="header-badges">
+                    <button class="btn-toggle-viz" id="btn-toggle-viz" type="button" title="Toggle Visualization Section Visibility">
+                        <span id="toggle-icon">👁️</span> <span id="toggle-text">Hide Diagram Section</span>
+                    </button>
                     <span class="status-badge live" id="api-status">
                         <span class="dot"></span> Surrogate ML Engine Connected
                     </span>
@@ -101,11 +104,15 @@
                 </div>
             </section>
 
-            <!-- Center Panel: Live SVG Cross-Section (Hidden for max calculation speed) -->
-            <!--
-            <section class="glass-card visualization-panel">
+            <!-- Center Panel: Live SVG Cross-Section & Harping Elevation -->
+            <section class="glass-card visualization-panel" id="viz-card">
                 <div class="card-header">
-                    <h2>Dynamic Cross-Section & Tendon Layout</h2>
+                    <div class="header-title-row">
+                        <h2>Dynamic Cross-Section & Tendon Layout</h2>
+                        <button class="btn-toggle-viz-card" id="btn-toggle-viz-card" type="button" title="Hide Diagram Section">
+                            ✕ Hide Section
+                        </button>
+                    </div>
                     <p class="card-desc">Real-time parametric SVG visualization of predicted I-girder dimensions and prestressing strands.</p>
                 </div>
 
@@ -120,7 +127,7 @@
                     <div class="legend-item"><span class="legend-line harp"></span> Harping Position (Hp)</div>
                 </div>
             </section>
-            -->
+           
 
             <!-- Right Panel: Predicted Outputs -->
             <section class="glass-card results-panel">
