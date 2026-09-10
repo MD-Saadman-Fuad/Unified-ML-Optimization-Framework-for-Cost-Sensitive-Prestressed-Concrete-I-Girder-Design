@@ -118,9 +118,7 @@ p
  ) [Column S]  
 
 Senior Machine Learning Engineer Development Roadmap
-To achieve high multi-target prediction accuracy (R 
-2
- >0.98, RMSE<2%), follow this structured 6-phase engineering pipeline:
+Structured 6-phase engineering pipeline. Note on performance: The project achieved **Mean R² = 0.630** (CV R² = 0.605) using a tuned RandomForest model on the 119 averaged unique cost-span families (strands R² = 0.946, spacing R² = 0.843, girders R² = 0.823, harp pos R² = 0.750). The initial aspirational target of R² > 0.98 was based on naive training on raw optimizer runs, where stochastic solver noise and train/test leakage artificially inflated or corrupted scores without reflecting true generalization.
 
 [Phase 1: Ingestion & Feature Engineering]
                        │
@@ -138,101 +136,14 @@ To achieve high multi-target prediction accuracy (R
                        │
                        ▼
 [Phase 6: Deployment & Web UI Integration]
+
 Phase 1: Domain-Driven Feature Engineering
-Raw inputs alone (C 
-c
-​
- ,C 
-s
-​
- ,C 
-p
-​
- ,L) under-represent structural mechanics. To maximize accuracy, inject domain-specific physical relationships directly into the feature matrix:  
-
-Bending Moment Proxy: Bending moment scales quadratically with span length (M 
-u
-​
- ∝L 
-2
- ). Adding L 
-2
-  provides a direct linear signal for structural capacity demand.  
-
-Relative Material Cost Ratios:
-
-Ratio 
-p/c
-​
- = 
-C 
-c
-​
- 
-C 
-p
-​
- 
-​
- ,Ratio 
-s/c
-​
- = 
-C 
-c
-​
- 
-C 
-s
-​
- 
-​
- 
-
-These ratios govern structural substitution behavior (e.g., trading deeper concrete sections G 
-d
-​
-  for fewer steel strands N 
-s
-​
- ).  
-
-Cross-Domain Interaction Terms:
-
-Interaction 
-p⋅L
-​
- =( 
-C 
-c
-​
- 
-C 
-p
-​
- 
-​
- )⋅L 
-2
- 
-
-This term explicitly captures how strand costs penalize long-span designs.  
+Raw inputs alone (Cc, Cs, Cp, L) under-represent structural mechanics. To maximize accuracy, 18 domain-specific physical features are extracted (including L², L³, AASHTO HS-20 live load proxy M_LL, material cost ratios Cp/Cc, Cs/Cc, Cs/Cp, long-span strand interactions (Cp/Cc)*L² and (Cp/Cc)*L³, volumetric stiffness L²/Cc, and economic composite indices).
 
 Phase 2: Data Preprocessing & Validation Strategy
-Train-Test Split (80/20): Split the 675 rows into 540 training samples and 135 test samples.  
-
-Stratified Grouping: Ensure that all 5 span length ranges (L) and cost combinations (C 
-c
-​
- ,C 
-s
-​
- ,C 
-p
-​
- ) are uniformly distributed across both training and test sets to prevent data leakage.  
-
-Feature Scaling: Apply StandardScaler or RobustScaler to numerical inputs to ensure zero mean and unit variance before feeding them into gradient-based models.  
+- Data Averaging: 5 stochastic optimizer runs per cost-span combination are averaged into 119 unique cost-span families to prevent 100% train/test leakage and remove optimizer noise.
+- Train-Test Split (80/20): Stratified 80/20 split by Span_ft yields **95 training combinations and 24 unseen test combinations**.
+- Feature Scaling: Apply StandardScaler fitted strictly on the 95 training samples across all 18 features (saved to `models/scaler.pkl`).  
 
 Phase 3: Multi-Output Model Selection & Hyperparameter Tuning
 Standard single-output regressors ignore correlations between target outputs. Use multi-output frameworks that model cross-target dependencies:  

@@ -31,35 +31,69 @@
 
 ## 2. Feature Engineering Equations
 
-Raw inputs are expanded into an 8-dimensional feature vector (X_feat) incorporating structural mechanics and cost interaction dynamics (`src/features/build_features.py`).
+Raw inputs are expanded into an 18-dimensional feature vector ($X_{\text{feat}}$) incorporating structural mechanics and cost interaction dynamics (`src/features/build_features.py`).
 
 $$
-X_{\text{feat}} = \begin{bmatrix} C_c, & C_p, & C_s, & L, & L^2, & \frac{C_p}{C_c}, & \frac{C_s}{C_c}, & \left(\frac{C_p}{C_c}\right) L^2 \end{bmatrix}^T
+X_{\text{feat}} \in \mathbb{R}^{18} = \begin{bmatrix} 
+C_c, & C_p, & C_s, & L, & L^2, & L^3, & M_{\text{LL}}, \\
+\frac{C_p}{C_c}, & \frac{C_s}{C_c}, & \frac{C_s}{C_p}, & \left(\frac{C_p}{C_c}\right) L^2, & \left(\frac{C_p}{C_c}\right) L^3, \\
+\frac{L^2}{C_c}, & \frac{L}{C_c}, & \frac{L}{C_p}, & \frac{C_p C_s}{C_c}, & C_{\text{tot}}, & \frac{C_c}{C_{\text{tot}}}
+\end{bmatrix}^T
 $$
 
 ### Equation 2.1: Bending Moment Demand Proxy (L²)
 $$
 f_{L^2}(L) = L^2
 $$
-* **Mechanics Rationale:** Mid-span bending moment (M_u) scales quadratically with span length under uniform load (M_u ∝ w L²).
+* **Mechanics Rationale:** Mid-span bending moment ($M_u$) scales quadratically with span length under uniform load ($M_u \propto w L^2$).
 
-### Equation 2.2: Strand-to-Concrete Unit Cost Ratio
+### Equation 2.2: Harping Position & Deflection Demand Proxy (L³)
+$$
+f_{L^3}(L) = L^3
+$$
+* **Mechanics Rationale:** Harping position and beam deflection scale with span cubed ($L^3$).
+
+### Equation 2.3: AASHTO HS-20 Live Load Moment Proxy
+$$
+f_{M_{\text{LL}}}(L) = 0.72 L + 10.0
+$$
+* **Mechanics Rationale:** Linear approximation of AASHTO HS-20 truck live load bending moment demand.
+
+### Equation 2.4: Strand-to-Concrete Unit Cost Ratio
 $$
 f_{\text{ratio,strand}}(C_p, C_c) = \frac{C_p}{C_c}
 $$
 * **Economic Rationale:** Captures relative unit price sensitivity between high-strength steel strands and bulk concrete.
 
-### Equation 2.3: Rebar-to-Concrete Unit Cost Ratio
+### Equation 2.5: Rebar-to-Concrete Unit Cost Ratio
 $$
 f_{\text{ratio,rebar}}(C_s, C_c) = \frac{C_s}{C_c}
 $$
 * **Economic Rationale:** Captures relative cost trade-off between mild shear reinforcement steel and concrete volume.
 
-### Equation 2.4: Long-Span Strand Cost Penalty Interaction
+### Equation 2.6: Rebar-to-Strand Cross-Steel Cost Ratio
 $$
-f_{\text{inter,strand-L}}(C_p, C_c, L) = \left( \frac{C_p}{C_c} \right) \times L^2
+f_{\text{ratio,rebar-strand}}(C_s, C_p) = \frac{C_s}{C_p}
+$$
+
+### Equation 2.7: Long-Span Strand Cost Penalty Interaction (Quadratic & Cubic)
+$$
+f_{\text{inter,strand-L2}}(C_p, C_c, L) = \left( \frac{C_p}{C_c} \right) \times L^2
+$$
+$$
+f_{\text{inter,strand-L3}}(C_p, C_c, L) = \left( \frac{C_p}{C_c} \right) \times L^3
 $$
 * **Interaction Rationale:** Models the compounding financial impact of high strand unit costs on long spans requiring high prestressing forces.
+
+### Equation 2.8: Volumetric Structural Demand & Price Indices
+$$
+f_{\text{vol-stiff}} = \frac{L^2}{C_c}, \quad f_{\text{span-Cc}} = \frac{L}{C_c}, \quad f_{\text{span-Cp}} = \frac{L}{C_p}
+$$
+
+### Equation 2.9: Composite Economic Indices
+$$
+f_{\text{elasticity}} = \frac{C_p \cdot C_s}{C_c}, \quad C_{\text{tot}} = C_c + 100 C_p + 1000 C_s, \quad f_{\text{concrete-share}} = \frac{C_c}{C_{\text{tot}}}
+$$
 
 ---
 
@@ -67,33 +101,35 @@ $$
 
 ### Equation 3.1: Standard Score (Z-Score) Normalization
 $$
-z_{j} = \frac{x_{j} - \mu_{j}}{\sigma_{j}} \quad \text{for } j = 1, 2, \dots, 8
+z_{j} = \frac{x_{j} - \mu_{j}}{\sigma_{j}} \quad \text{for } j = 1, 2, \dots, 18
 $$
 
 Where:
-* x_{j} is the raw value of feature j.
-* μ_{j} is the sample mean computed **strictly on training data** (N_train = 476).
-* σ_{j} is the sample standard deviation computed on training data (`models/scaler.pkl`).
+* $x_{j}$ is the raw value of feature $j$.
+* $\mu_{j}$ is the sample mean computed **strictly on training data** ($N_{\text{train}} = 95$ averaged unique cost-span families).
+* $\sigma_{j}$ is the sample standard deviation computed on training data (`models/scaler.pkl`).
 
 ---
 
 ## 4. Primary Machine Learning Surrogate Formulation
 
-The primary surrogate model ([models/best_model.pkl](file:///e:/civil/Unified-ML-Optimization-Framework-for-Cost-Sensitive-Prestressed-Concrete-I-Girder-Design/models/best_model.pkl)) uses a `MultiOutputRegressor` wrapping gradient boosted decision tree ensembles (XGBoost).
+The primary surrogate model (`models/best_model.pkl`) is a **Tuned RandomForest Regressor** ensemble, selected through Optuna hyperparameter optimization because it outperforms gradient boosting on the 95-sample averaged training dataset (Test Mean $R^2 = 0.630$ for RF vs. $0.539$ for GradientBoosting and $0.519$ for XGBoost).
 
-### Equation 4.1: Gradient Boosted Tree Prediction
+### Equation 4.1: Random Forest Ensemble Prediction
 $$
 \hat{Y}_{\text{target}} = \begin{bmatrix} \hat{y}_{1}(Z), & \hat{y}_{2}(Z), & \dots, & \hat{y}_{7}(Z) \end{bmatrix}^T
 $$
 
-Where for each target output k in {1, 2, ..., 7}:
+Where for each target output $k \in \{1, 2, \dots, 7\}$:
 $$
-\hat{y}_{k}(Z) = \eta \sum_{m=1}^{M} f_{m,k}(Z)
+\hat{y}_{k}(Z) = \frac{1}{B} \sum_{b=1}^{B} T_{b,k}(Z)
 $$
 
-* M is the number of boosted trees (`n_estimators`).
-* f_{m,k}(Z) is the individual decision tree mapping standardized feature vector Z ∈ ℝ⁸ to leaf values.
-* η is the learning rate shrinkage factor (`learning_rate`).
+* $B$ is the number of ensemble trees (`n_estimators = 1000`).
+* $T_{b,k}(Z)$ is the individual decision tree trained on a bootstrap sample of the training data, mapping standardized feature vector $Z \in \mathbb{R}^{18}$ to leaf values.
+* Split decisions evaluate a random subset of features ($\sqrt{18} \approx 4$ features via `max_features = 'sqrt'`).
+
+*(For benchmarking, MultiOutput XGBoost and GradientBoosting models are also evaluated; see `reports/model_benchmark.json`).*
 
 ---
 

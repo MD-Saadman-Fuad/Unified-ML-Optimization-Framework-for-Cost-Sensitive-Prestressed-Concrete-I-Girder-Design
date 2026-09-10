@@ -83,20 +83,45 @@ def load_dataset(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
     combined = combined.reset_index(drop=True)
     return combined
 
-def load_primary_dataset(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
-    """
-    Loads only Alternative 1 (the optimal design for each cost-span combination).
-    Yields 135 deterministic optimal designs across 5 span lengths.
-    """
-    df = load_dataset(filepath)
-    df_primary = df[df['Design_Rank'] == 1].copy().reset_index(drop=True)
-    return df_primary
-
 def load_dataset_averaged(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
     """
-    Compatibility wrapper returning load_primary_dataset (Alternative 1).
+    Loads all 5 alternatives per (Concrete, Strand, Rebar, Span_ft) family and
+    computes the MEAN of target values across all runs, yielding 119 deterministic
+    noise-reduced rows (one per unique cost-span combination).
+
+    This is the correct primary training path.
+
+    Why average?
+    -----------
+    The raw dataset contains 5 stochastic optimizer runs per cost-span combination.
+    Using any single run (e.g., rank=1) introduces optimizer noise as if it were signal,
+    causing the model to learn random variation rather than true cost-response relationships.
+    Averaging removes within-combination variance and enables genuine generalization.
+
+    Returns
+    -------
+    pd.DataFrame
+        119-row averaged dataframe with INPUT_COLS + TARGET_COLS.
     """
-    return load_primary_dataset(filepath)
+    df = load_dataset(filepath)
+    averaged = (
+        df.groupby(INPUT_COLS, sort=False)[TARGET_COLS]
+        .mean()
+        .reset_index()
+    )
+    averaged = averaged.reset_index(drop=True)
+    return averaged
+
+
+def load_primary_dataset(filepath: str = "Girder_Dataset.xlsx") -> pd.DataFrame:
+    """
+    Returns the averaged primary dataset (mean across all 5 optimizer runs per family).
+    This is the canonical training dataset for the primary surrogate model.
+
+    NOTE: Previously returned rank=1 only (one stochastic run).
+    Now correctly delegates to load_dataset_averaged() for noise-reduced labels.
+    """
+    return load_dataset_averaged(filepath)
 
 if __name__ == "__main__":
     df_clean = load_dataset()

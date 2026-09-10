@@ -1,5 +1,9 @@
 """
 Multi-output machine learning model training, hyperparameter tuning (Optuna), evaluation, and model artifact generation.
+
+Training data: Averaged design targets (mean across 5 stochastic optimizer runs per
+cost-span family). This eliminates within-family optimizer noise and enables the model
+to learn true cost-response relationships rather than random variation.
 """
 import sys
 import os
@@ -13,6 +17,7 @@ import seaborn as sns
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_percentage_error
+from sklearn.model_selection import KFold, cross_val_score
 from xgboost import XGBRegressor
 import optuna
 
@@ -54,41 +59,40 @@ def calculate_metrics(Y_true: pd.DataFrame, Y_pred: np.ndarray) -> dict:
     metrics["mean_r2"] = round(float(np.mean(r2_scores)), 5)
     return metrics
 
-def optuna_tune_randomforest(X_train: pd.DataFrame, Y_train: pd.DataFrame, n_trials: int = 30) -> dict:
+def optuna_tune_randomforest(X_train: pd.DataFrame, Y_train: pd.DataFrame, n_trials: int = 15) -> dict:
     """
-    Optimizes RandomForest hyperparameters using Optuna.
+    Optimizes RandomForest hyperparameters using Optuna with per-target CV scoring.
     RandomForest outperforms XGBoost on the small (~95 row) averaged dataset.
+
+    Uses per-target R² averaging (instead of joint multi-output CV) to avoid
+    dilution from low-signal targets like 'Gir Dep (in)'.
     """
     print(f"Starting Optuna hyperparameter optimization ({n_trials} trials)...")
 
     def objective(trial):
         params = {
-            "n_estimators":   trial.suggest_int("n_estimators", 200, 1000, step=100),
-            "max_depth":      trial.suggest_int("max_depth", 3, 20),
-            "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
-            "min_samples_leaf":  trial.suggest_int("min_samples_leaf", 1, 5),
-            "max_features":   trial.suggest_categorical("max_features", ["sqrt", "log2", None]),
-            "random_state":   42,
-            "n_jobs":         -1
+            "n_estimators":      trial.suggest_int("n_estimators", 100, 500, step=100),
+            "max_depth":         trial.suggest_int("max_depth", 3, 15),
+            "min_samples_split": trial.suggest_int("min_samples_split", 2, 12),
+            "min_samples_leaf":  trial.suggest_int("min_samples_leaf", 1, 6),
+            "max_features":      trial.suggest_categorical("max_features", ["sqrt", "log2", None]),
+            "random_state": 42,
+            "n_jobs": 1,  # n_jobs=1 avoids joblib overhead on 95-row dataset
         }
 
-        from sklearn.model_selection import cross_val_score
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.pipeline import Pipeline
-
-        pipe = Pipeline([
-            ("sc", StandardScaler()),
-            ("m", MultiOutputRegressor(RandomForestRegressor(**params)))
-        ])
-        # 5-fold CV mean R2 across all targets
-        scores = cross_val_score(pipe, X_train, Y_train,
-                                 cv=5, scoring="r2", n_jobs=-1)
-        return float(scores.mean())
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        per_target_r2 = []
+        for col in Y_train.columns:
+            model = RandomForestRegressor(**params)
+            scores = cross_val_score(model, X_train, Y_train[col], cv=kf,
+                                     scoring="r2", n_jobs=1)
+            per_target_r2.append(float(np.mean(scores)))
+        return float(np.mean(per_target_r2))
 
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=n_trials)
 
-    print(f"Optuna tuning finished. Best Trial CV-R2: {study.best_value:.5f}")
+    print(f"Optuna tuning finished. Best Trial Per-Target Mean CV-R2: {study.best_value:.5f}")
     print("Best Hyperparameters:", study.best_params)
     return study.best_params
 
@@ -146,7 +150,7 @@ def train_and_evaluate():
         print(f"Model: {name:<20} | Test Mean R2: {metrics['mean_r2']:.5f}")
 
     print("\n--- 2. Hyperparameter Optimization (RandomForest — best on small averaged data) ---")
-    best_params = optuna_tune_randomforest(X_train, Y_train, n_trials=30)
+    best_params = optuna_tune_randomforest(X_train, Y_train, n_trials=15)
 
     print("\n--- 3. Training Best Tuned RandomForest Model ---")
     best_rf_base = RandomForestRegressor(**best_params, random_state=42, n_jobs=-1)

@@ -17,20 +17,24 @@ FEATURE_NAMES = [
     'Rebar',
     'Span_ft',
     'L_sq',
+    'L_cube',
     'M_LL_proxy',
     'ratio_strand_concrete',
     'ratio_rebar_concrete',
     'ratio_rebar_strand',
     'interaction_strand_L',
+    'strand_span_cube',
     'volumetric_stiffness',
     'span_concrete_ratio',
     'span_strand_stiffness',
-    'elasticity_index'
+    'elasticity_index',
+    'total_cost_index',
+    'concrete_cost_share',
 ]
 
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Constructs 14 domain-engineered features from raw inputs.
+    Constructs 18 domain-engineered features from raw inputs.
 
     Parameters
     ----------
@@ -40,7 +44,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        DataFrame with 14 physical feature columns.
+        DataFrame with 18 physical feature columns.
     """
     missing = [c for c in INPUT_COLS if c not in df.columns]
     if missing:
@@ -48,8 +52,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
     X = df[INPUT_COLS].copy()
 
-    # 1. Uniform Dead Load Bending Moment Proxy (Mu proportional to L^2)
+    # 1. Span polynomial terms
     X['L_sq'] = X['Span_ft'] ** 2
+    X['L_cube'] = X['Span_ft'] ** 3  # Cubic — harping position & deflection are L³-dominant
 
     # 2. AASHTO HS20 Live Load Bending Moment Proxy (MLL proportional to 0.72*L + 10)
     X['M_LL_proxy'] = 0.72 * X['Span_ft'] + 10.0
@@ -61,12 +66,21 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # 4. Cross-Domain Interaction Terms
     X['interaction_strand_L'] = X['ratio_strand_concrete'] * X['L_sq']
+    X['strand_span_cube'] = X['Strand'] * X['L_cube'] / 1e6  # Dominant predictor of strand count
     X['volumetric_stiffness'] = X['Concrete'] / (X['Strand'] * X['L_sq'] + 1.0)
     X['span_concrete_ratio'] = X['Span_ft'] / X['Concrete']
     X['span_strand_stiffness'] = (X['Span_ft'] ** 3) / (X['Strand'] * 1000.0)
     X['elasticity_index'] = (X['Rebar'] * X['Strand']) / (X['Concrete'] ** 2)
 
+    # 5. Composite Cost Efficiency Features
+    # Total normalized cost per foot of span
+    X['total_cost_index'] = (X['Concrete'] / 100.0 + X['Strand'] + X['Rebar']) / X['Span_ft']
+    # Concrete fraction of total material cost mix (normalized)
+    total_raw = X['Concrete'] / 100.0 + X['Strand'] + X['Rebar']
+    X['concrete_cost_share'] = (X['Concrete'] / 100.0) / total_raw
+
     return X[FEATURE_NAMES]
+
 
 if __name__ == "__main__":
     from src.data.load_data import load_dataset

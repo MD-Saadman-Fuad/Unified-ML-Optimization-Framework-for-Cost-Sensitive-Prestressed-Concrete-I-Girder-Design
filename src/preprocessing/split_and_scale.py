@@ -16,19 +16,21 @@ from src.features.build_features import build_features
 
 def split_and_scale_data(filepath: str = "Girder_Dataset.xlsx", test_size: float = 0.2, random_state: int = 42):
     """
-    Loads Primary (Alt 1) dataset, splits into stratified train/test sets by Span_ft,
-    and fits StandardScaler on training features.
+    Loads the averaged primary dataset (mean across 5 optimizer runs per family),
+    splits into stratified train/test sets by Span_ft, and fits StandardScaler
+    on training features.
 
     Returns
     -------
     tuple
         (X_train_scaled, X_test_scaled, Y_train, Y_test, scaler, feature_names)
     """
-    df = load_primary_dataset(filepath)
+    from src.data.load_data import load_dataset_averaged
+    df = load_dataset_averaged(filepath)
     X = build_features(df)
     Y = df[TARGET_COLS].copy()
 
-    print(f"  [Preprocessing] Primary Alt-1 dataset: {len(df)} unique optimal cost-span designs")
+    print(f"  [Preprocessing] Averaged primary dataset: {len(df)} unique cost-span families (noise reduced via mean of 5 optimizer runs)")
 
     X_train, X_test, Y_train, Y_test = train_test_split(
         X, Y,
@@ -55,6 +57,7 @@ def split_and_scale_data(filepath: str = "Girder_Dataset.xlsx", test_size: float
     Y_test.to_csv("data/splits/Y_test.csv")
 
     return X_train_scaled, X_test_scaled, Y_train, Y_test, scaler, X.columns.tolist()
+
 
 
 def split_and_scale_all_alternatives(filepath: str = "Girder_Dataset.xlsx", test_size: float = 0.2, random_state: int = 42):

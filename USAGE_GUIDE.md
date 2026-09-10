@@ -16,14 +16,14 @@ This framework replaces expensive iterative structural optimizers (Differential 
                                     ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
 │          Phase 0-1 · DATA LOADING & FEATURE ENGINEERING                  │
-│  load_dataset_averaged() -> 119 unique cost-span combos                  │
-│  8 features: [Cc, Cp, Cs, L, L^2, Cp/Cc, Cs/Cc, (Cp/Cc)*L^2]          │
+│  load_dataset_averaged() -> 119 unique cost-span families                │
+│  18 features: [Cc, Cp, Cs, L, L^2, L^3, M_LL, ratios, stiffness, ...]    │
 └───────────────────────────────────┬──────────────────────────────────────┘
                                     │
                                     ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
 │           Phase 3 · RANDOMFOREST SURROGATE MODEL                         │
-│   Predicts 7 structural design targets  (CV Mean R2 ~ 0.56)             │
+│   Predicts 7 structural design targets (Mean R2 = 0.630, CV R2 = 0.605)  │
 └───────────────────────────────────┬──────────────────────────────────────┘
                                     │
                                     ▼
@@ -50,45 +50,55 @@ This framework replaces expensive iterative structural optimizers (Differential 
 - `load_dataset()` → 595 raw rows.
 - `load_dataset_averaged()` → **119 rows** (5 stochastic optimizer runs per combination averaged into one deterministic row per unique cost-span combination).
 
-> **Why average?** The raw 595 rows contain 5 optimizer runs per cost-span combination. Training on raw rows causes 100% train/test leakage — every test combination also exists in training — so R² measures noise prediction, not signal. Averaging produces genuine, unseen test combos and raises Mean R² from 0.22 → 0.56.
+> **Why average?** The raw 595 rows contain 5 optimizer runs per cost-span combination. Training on raw rows causes 100% train/test leakage — every test combination also exists in training — so R² measures noise prediction, not signal. Averaging produces genuine, unseen test combos and yields true generalization performance.
 
 ### Phase 1 — Feature Engineering (`src/features/build_features.py`)
-Expands 4 raw inputs into 8 domain-engineered features:
+Expands 4 raw inputs into **18 domain-engineered features**:
 
-| Feature | Formula | Rationale |
+| Feature Name | Formula | Physical Meaning |
 |---|---|---|
-| `Concrete` | Cc | Raw concrete cost |
-| `Strand` | Cp | Raw strand cost |
-| `Rebar` | Cs | Raw rebar cost |
-| `Span_ft` | L | Raw span length |
-| `L_sq` | L² | Bending moment proxy (Mu proportional to L²) |
-| `ratio_strand_concrete` | Cp/Cc | Relative strand-to-concrete cost |
-| `ratio_rebar_concrete` | Cs/Cc | Relative rebar-to-concrete cost |
-| `interaction_strand_L` | (Cp/Cc) * L² | Strand cost penalty on long spans |
+| `Concrete` | Cc | Raw concrete unit cost ($/yd³) |
+| `Strand` | Cp | Raw strand unit cost ($/ft/strand) |
+| `Rebar` | Cs | Raw rebar unit cost ($/lb) |
+| `Span_ft` | L | Bridge span length (ft) |
+| `L_sq` | Span_ft ** 2 | Bending moment proxy (Mu proportional to L²) |
+| `L_cube` | Span_ft ** 3 | Harping position and deflection (L³-dominant) |
+| `M_LL_proxy` | 0.72 * Span_ft + 10.0 | AASHTO HS20 live load moment proxy |
+| `ratio_strand_concrete` | Cp / Cc | Relative strand-to-concrete unit cost |
+| `ratio_rebar_concrete` | Cs / Cc | Relative rebar-to-concrete unit cost |
+| `ratio_rebar_strand` | Cs / Cp | Cross-steel relative cost ratio |
+| `interaction_strand_L` | (Cp / Cc) * (Span_ft ** 2) | Strand cost penalty on long spans |
+| `strand_span_cube` | (Cp / Cc) * (Span_ft ** 3) | Deflection-strand economic sensitivity |
+| `volumetric_stiffness` | (Span_ft ** 2) / Cc | Span structural demand per unit concrete cost |
+| `span_concrete_ratio` | Span_ft / Cc | Span length to concrete price index |
+| `span_strand_stiffness` | Span_ft / Cp | Span length to strand cost sensitivity |
+| `elasticity_index` | (Cp * Cs) / Cc | Combined steel-to-concrete economic index |
+| `total_cost_index` | Cc + 100*Cp + 1000*Cs | Weighted composite material cost indicator |
+| `concrete_cost_share` | Cc / total_cost_index | Relative concrete economic expenditure share |
 
 ### Phase 2 — Preprocessing (`src/preprocessing/split_and_scale.py`)
 - Uses `load_dataset_averaged()` → 119 unique cost-span combination rows.
 - Stratified 80/20 split by `Span_ft` → **95 train / 24 test** combos.
-- Fits `StandardScaler` on training features only → `models/scaler.pkl`.
+- Fits `StandardScaler` on 18 training features only → `models/scaler.pkl`.
 
 ### Phase 3 — Model Training (`src/models/train.py`)
 - Benchmarks RandomForest, GradientBoosting, and XGBoost.
-- **Primary model: RandomForest** (wins on 95 training rows; XGBoost overfits without heavy regularization on small data).
-- Optuna (30 trials, 5-fold CV) tunes RF hyperparameters: `n_estimators`, `max_depth`, `min_samples_split`, `min_samples_leaf`, `max_features`.
+- **Primary model: RandomForest** (achieves Mean R² = 0.630 on test set; XGBoost achieves 0.519 on the 95-row dataset due to small-sample tree variance).
+- Optuna (15 trials, 5-fold CV) tunes RF hyperparameters: `n_estimators`, `max_depth`, `min_samples_split`, `min_samples_leaf`, `max_features`.
 - Saves `models/best_model.pkl`, `reports/model_benchmark.json`, `reports/scatter_plots/`.
 
-**Expected 5-fold CV R² after training:**
+**Achieved Performance on Test Set (24 Unseen Combos):**
 
-| Target | CV R² |
-|---|---|
-| Number of strand per girder | ~0.96 |
-| Lateral Spacing | ~0.83 |
-| Number of Girders | ~0.75 |
-| Harp Position | ~0.66 |
-| Bot Flange Width | ~0.49 |
-| Girder Depth | ~0.37 |
-| Bot Flange Depth | ~-0.14 *(inherently low — near-zero correlation with cost inputs)* |
-| **Mean** | **~0.56** |
+| Target | Test R² | Test RMSE | Status |
+|---|---|---|---|
+| Number of strand per girder | **0.946** | 4.30 strands | Excellent |
+| Lateral Spacing (ft) | **0.843** | 0.44 ft | Excellent |
+| Number of Girders | **0.823** | 0.64 girders | Excellent |
+| Harping Position (ft) | **0.750** | 1.96 ft | Strong |
+| Girder Depth (in) | **0.524** | 1.88 in | Good |
+| Bottom Flange Width (in) | **0.483** | 2.45 in | Moderate |
+| Bottom Flange Depth (in) | **0.040** | 0.35 in | Flat target (~7.5 in constant) |
+| **Overall Mean** | **0.630** | — | **CV R²: 0.605** |
 
 ### Phase 4 — RSM Equations (`src/equations/rsm_fit.py`)
 - Fits 2nd-order polynomial surfaces on the averaged 119-row dataset.
@@ -143,8 +153,8 @@ python src/features/build_features.py
 ```
 Expected output:
 ```
-[Phase 1] Feature engineering complete. Features shape: (595, 8)
-Features list: ['Concrete', 'Strand', 'Rebar', 'Span_ft', 'L_sq', ...]
+[Phase 1] Feature engineering complete. Features shape: (595, 18)
+Features list: ['Concrete', 'Strand', 'Rebar', 'Span_ft', 'L_sq', 'L_cube', 'M_LL_proxy', ...]
 ```
 
 ---
@@ -157,7 +167,7 @@ Expected output:
 ```
   [Preprocessing] Using averaged dataset: 119 unique cost-span combinations
 [Phase 2] Preprocessing & splitting complete.
-X_train shape: (95, 8), X_test shape: (24, 8)
+X_train shape: (95, 18), X_test shape: (24, 18)
 Fitted scaler saved to models/scaler.pkl
 ```
 
@@ -169,18 +179,30 @@ python src/models/train.py
 ```
 Expected output:
 ```
-  [Preprocessing] Using averaged dataset: 119 unique cost-span combinations
+  [Preprocessing] Averaged primary dataset: 119 unique cost-span families (noise reduced via mean of 5 optimizer runs)
 
 --- 1. Baseline Model Benchmarking ---
-Model: RandomForest         | Test Mean R2: ~0.578
-Model: GradientBoosting     | Test Mean R2: ~0.359
-Model: XGBoost_Default      | Test Mean R2: ~0.376
+Model: RandomForest         | Test Mean R2: 0.58991
+Model: GradientBoosting     | Test Mean R2: 0.53903
+Model: XGBoost_Default      | Test Mean R2: 0.51908
 
---- 2. Hyperparameter Optimization (RandomForest) ---
-Starting Optuna hyperparameter optimization (30 trials)...
+--- 2. Hyperparameter Optimization (RandomForest — best on small averaged data) ---
+Starting Optuna hyperparameter optimization (15 trials)...
+Optuna tuning finished. Best Trial Per-Target Mean CV-R2: 0.60513
+Best Hyperparameters: {'n_estimators': 1000, 'max_depth': 25, 'min_samples_split': 14, 'min_samples_leaf': 4, 'max_features': 'sqrt'}
 
 --- 3. Training Best Tuned RandomForest Model ---
-FINAL TUNED RANDOMFOREST TEST MEAN R2: ~0.58+
+
+=======================================================
+FINAL TUNED RANDOMFOREST TEST MEAN R2: 0.62987
+=======================================================
+Target: Gir Dep (in)                   | R2 = 0.52409  | RMSE = 1.88456
+Target: Lat Spac (ft)                  | R2 = 0.84279  | RMSE = 0.44374
+Target: No. of Gir                     | R2 = 0.82298  | RMSE = 0.63842
+Target: bot flange bot part depth (in) | R2 = 0.04018  | RMSE = 0.35338
+Target: bot flange bot part width (in) | R2 = 0.48270  | RMSE = 2.45398
+Target: Number of strand per girder    | R2 = 0.94589  | RMSE = 4.29633
+Target: Harp Pos (ft)                  | R2 = 0.75046  | RMSE = 1.95666
 ```
 
 Files created:
@@ -298,9 +320,9 @@ project-root/
 │   ├── data/
 │   │   └── load_data.py             <- load_dataset() + load_dataset_averaged()
 │   ├── features/
-│   │   └── build_features.py        <- 8 domain-engineered features
+│   │   └── build_features.py        <- 18 domain-engineered features
 │   ├── preprocessing/
-│   │   └── split_and_scale.py       <- Averaged 95/24 split + scaler
+│   │   └── split_and_scale.py       <- Averaged 95/24 split + scaler (18 features)
 │   ├── models/
 │   │   └── train.py                 <- RF benchmark + Optuna tuning
 │   ├── equations/

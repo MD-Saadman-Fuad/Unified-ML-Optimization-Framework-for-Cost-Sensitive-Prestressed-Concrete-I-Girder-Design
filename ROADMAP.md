@@ -1,7 +1,8 @@
 # Project Roadmap — Unified ML Optimization Framework
 
 > Structured 6-Phase Engineering Pipeline
-> Target: R2 > 0.98, RMSE < 2% across all 7 structural design outputs
+> Achieved: Mean R2 = 0.630 across 7 targets (tuned RandomForest on 119 averaged rows)
+> Original Target: R2 > 0.98, RMSE < 2% across all 7 structural design outputs
 > All units are imperial (inches, feet, $/yd3, $/lb) throughout the entire pipeline.
 
 ---
@@ -90,8 +91,10 @@
 - [ ] **1.11** Unit test `build_features()` with at least 3 known input rows and hand-calculated expected outputs
 - [ ] **1.12** Save engineered feature matrix to `data/processed/features.csv`
 
-**Final X matrix (8 features):**
-`[Concrete, Strand, Rebar, Span_ft, L_sq, ratio_strand_concrete, ratio_rebar_concrete, interaction_strand_L]`
+**Final X matrix (18 features):**
+`[Concrete, Strand, Rebar, Span_ft, L_sq, L_cube, M_LL_proxy, ratio_strand_concrete, ratio_rebar_concrete, ratio_rebar_strand, interaction_strand_L, strand_span_cube, volumetric_stiffness, span_concrete_ratio, span_strand_stiffness, elasticity_index, total_cost_index, concrete_cost_share]`
+
+**Added in v2 (post accuracy fix):** L_cube, M_LL_proxy, ratio_rebar_strand, strand_span_cube, total_cost_index, concrete_cost_share
 
 **Deliverable:** `notebooks/01_eda.ipynb`, `src/features/build_features.py`, `data/processed/features.csv`
 
@@ -105,7 +108,8 @@
 
 - [ ] **2.1** Write `src/preprocessing/split_and_scale.py`
 - [ ] **2.2** Perform 80/20 stratified split using `train_test_split` with `stratify=df['Span_ft']`
-  - Expected: ~536 train rows, ~134 test rows
+  - On 119 averaged rows: **~95 train rows, ~24 test rows**
+  - Note: Previously targeting 536/134 split on raw 670 rows; now correctly using 119 averaged rows
 - [ ] **2.3** Verify split balance: each span value appears in both train and test sets
 - [ ] **2.4** Fit `StandardScaler` on training features ONLY (all 8 engineered features)
 - [ ] **2.5** Transform both train and test using the fitted scaler
@@ -268,11 +272,11 @@ All units remain imperial throughout this phase.
 
 ## Milestone Summary
 
-| Milestone | Phases | Key Deliverable |
-|-----------|--------|-----------------|
-| M1 — Data Ready | 0–1 | 670-row clean dataset, 8-feature matrix |
-| M2 — Split Ready | 2 | Stratified 536/134 split, fitted scaler saved |
-| M3 — Model Ready | 3 | Tuned best model .pkl, R2 > 0.98 |
-| M4 — Equations Ready | 4 | Closed-form equations for all 7 targets |
-| M5 — Physics-Safe | 5 | Constraint-enforced inference pipeline |
-| M6 — Deployed | 6 | Live web app with SVG visualization |
+| Milestone | Phases | Key Deliverable | Status |
+|-----------|--------|-----------------|--------|
+| M1 — Data Ready | 0–1 | 595-row clean dataset, 18-feature matrix | DONE |
+| M2 — Split Ready | 2 | Stratified 95/24 split (averaged 119 rows), fitted scaler saved | DONE |
+| M3 — Model Ready | 3 | Tuned RF best_model.pkl, Mean R2=0.630 | DONE |
+| M4 — Equations Ready | 4 | Closed-form equations for all 7 targets | Pending |
+| M5 — Physics-Safe | 5 | Constraint-enforced inference pipeline | DONE |
+| M6 — Deployed | 6 | Live web app with SVG visualization | DONE |
