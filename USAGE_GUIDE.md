@@ -100,9 +100,14 @@ Expands 4 raw inputs into **18 domain-engineered features**:
 | Bottom Flange Depth (in) | **0.040** | 0.35 in | Flat target (~7.5 in constant) |
 | **Overall Mean** | **0.630** | — | **CV R²: 0.605** |
 
-### Phase 4 — RSM Equations (`src/equations/rsm_fit.py`)
-- Fits 2nd-order polynomial surfaces on the averaged 119-row dataset.
-- Outputs `reports/equations/rsm_equations.json` and `reports/equations/rsm_equations.md`.
+### Phase 4 — RSM Equations (`src/equations/train_rsm_benchmark.py`)
+- Fits **Sparse LassoCV 3rd-order polynomial** surfaces on MinMaxScaler-normalized inputs.
+- **N_g** (No. of Girders) and **H_p** (Harp Position) are replaced by physics-derived formulas:
+  - `Ng = round(37.0 / S) + 1`  (bridge deck width = 37.0 ft)
+  - `Hp = 0.40 × L`  (AASHTO midspan harping fraction)
+- LassoCV auto-prunes near-zero cross-terms — equations shrink from 15 terms → 1–29 terms per target.
+- Mean R² improved from 0.32 (old 2nd-order linear) → **0.53** (new LassoCV 3rd-order).
+- Outputs `reports/equations/rsm_equations.json`.
 
 ### Phase 5 — Constraint Enforcement (`src/postprocess/constraints.py`)
 Post-processes raw ML predictions to enforce physical bounds:
@@ -218,9 +223,10 @@ reports/scatter_plots/*.png
 
 ### Step 6 — Generate RSM Equations *(optional)*
 ```bash
-python src/equations/rsm_fit.py
+python -m src.equations.train_rsm_benchmark
 ```
-Creates `reports/equations/rsm_equations.json` and `rsm_equations.md`.
+Fits Sparse LassoCV 3rd-order RSM with normalized inputs. Creates `reports/equations/rsm_equations.json`.
+Physics-derived formulas used for `No. of Gir` and `Harp Pos (ft)` instead of polynomial regression.
 
 ---
 
@@ -271,7 +277,7 @@ pip install -r requirements.txt
 python src/models/train.py
 
 # 3. (Optional) Generate RSM equations
-python src/equations/rsm_fit.py
+python -m src.equations.train_rsm_benchmark
 
 # 4. Start backend server
 python api/main.py

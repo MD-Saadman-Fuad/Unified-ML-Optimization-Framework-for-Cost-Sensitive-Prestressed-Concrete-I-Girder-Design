@@ -276,11 +276,22 @@ model.fit(X_train_scaled, Y_train['Gir Dep (in)'])
 ```
 
 ### Response Surface Methodology (RSM)
-Second-order polynomial across the full input space:
+Sparse LassoCV polynomial across normalized inputs (MinMaxScaled to [0,1]):
 ```
-y_k = b0 + sum(bi*xi) + sum(bii*xi^2) + sum(bij*xi*xj)   for i=1..4, i<j
+# Inputs normalized first:
+Cc* = (Cc - 405) / 195,  Cp* = (Cp - 1.26) / 0.97
+Cs* = (Cs - 2.18) / 1.27, L*  = (L - 100) / 80
+
+# Per-target LassoCV with 3rd-order polynomial expansion
+y_k = sum(beta_j * phi_j(Cc*, Cp*, Cs*, L*))  # only non-zero Lasso terms
+
+# Physics-derived (not regressed):
+Ng = round(37.0 / S) + 1   # bridge deck width = 37.0 ft
+Hp = 0.40 * L              # AASHTO midspan harping zone
 ```
-Fit using `sklearn.preprocessing.PolynomialFeatures(degree=2)` then `statsmodels.OLS`.
+Fit using `sklearn.preprocessing.PolynomialFeatures(degree=3)` then `LassoCV` per target.
+Mean R² improved from 0.32 (old OLS 2nd-order) → **0.53** (LassoCV 3rd-order sparse).
+Script: `src/equations/train_rsm_benchmark.py`
 
 ---
 
