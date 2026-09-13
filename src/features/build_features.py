@@ -1,6 +1,19 @@
 """
 Domain-driven feature engineering module for prestressed concrete I-girder surrogate model.
-Expands raw cost and span inputs into a 14-dimensional structural mechanics feature vector.
+Expands raw cost and span inputs into an 11-dimensional validated feature vector.
+
+Feature selection rationale (engineering review):
+  KEEP   : L², L³ (span demand proxies — well established in structural mechanics)
+  KEEP   : Cp/Cc, Cs/Cc, Cs/Cp (unit-cost ratios — dataset directly varies these)
+  KEEP   : (Cp/Cc)×L² (cost-span interaction — L² variant, tested and validated)
+  KEEP   : Cp·Cs/Cc² (composite cost interaction term, renamed from 'elasticity_index')
+  REMOVED: M_LL_proxy — not a real AASHTO equation; redundant with L
+  REMOVED: strand_span_cube (Cp×L³) — L³ interaction not validated vs L² variant
+  REMOVED: volumetric_stiffness, span_concrete_ratio, span_strand_stiffness — no
+           engineering evidence these ratio forms represent real relationships
+  REMOVED: total_cost_index — artificial 100×/1000× coefficients, not quantity-based
+  REMOVED: concrete_cost_share — depends on artificial total cost; meaningless without
+           real material quantities from design
 """
 import sys
 import os
@@ -12,29 +25,28 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 INPUT_COLS = ['Concrete', 'Strand', 'Rebar', 'Span_ft']
 
 FEATURE_NAMES = [
-    'Concrete',
-    'Strand',
-    'Rebar',
-    'Span_ft',
-    'L_sq',
-    'L_cube',
-    'M_LL_proxy',
-    'ratio_strand_concrete',
-    'ratio_rebar_concrete',
-    'ratio_rebar_strand',
-    'interaction_strand_L',
-    'strand_span_cube',
-    'volumetric_stiffness',
-    'span_concrete_ratio',
-    'span_strand_stiffness',
-    'elasticity_index',
-    'total_cost_index',
-    'concrete_cost_share',
+    # Raw inputs
+    'Concrete',              # Cc — concrete unit cost ($/yd³)
+    'Strand',                # Cp — prestressing strand unit cost ($/linear ft per strand)
+    'Rebar',                 # Cs — rebar unit cost ($/lb)
+    'Span_ft',               # L  — span length (ft)
+    # Span demand proxies
+    'L_sq',                  # L² — bending moment demand (M ∝ wL²)
+    'L_cube',                # L³ — nonlinear deflection/demand proxy
+    # Unit cost ratios
+    'ratio_strand_concrete', # Cp/Cc — strand-to-concrete unit cost ratio
+    'ratio_rebar_concrete',  # Cs/Cc — rebar-to-concrete unit cost ratio
+    'ratio_rebar_strand',    # Cs/Cp — rebar-to-strand cross-steel unit cost ratio
+    # Cost-span interaction (L² only — L³ variant not validated)
+    'interaction_strand_L',  # (Cp/Cc)×L² — strand cost pressure × span demand
+    # Composite cost interaction
+    'cost_interaction',      # Cp·Cs/Cc² — joint steel cost relative to concrete (renamed)
 ]
+
 
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Constructs 18 domain-engineered features from raw inputs.
+    Constructs 11 domain-engineered features from raw inputs.
 
     Parameters
     ----------
@@ -44,7 +56,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        DataFrame with 18 physical feature columns.
+        DataFrame with 11 validated feature columns (see FEATURE_NAMES).
     """
     missing = [c for c in INPUT_COLS if c not in df.columns]
     if missing:
@@ -53,31 +65,19 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     X = df[INPUT_COLS].copy()
 
     # 1. Span polynomial terms
-    X['L_sq'] = X['Span_ft'] ** 2
-    X['L_cube'] = X['Span_ft'] ** 3  # Cubic — harping position & deflection are L³-dominant
+    X['L_sq']   = X['Span_ft'] ** 2
+    X['L_cube'] = X['Span_ft'] ** 3  # Cubic span proxy — nonlinear deflection/demand
 
-    # 2. AASHTO HS20 Live Load Bending Moment Proxy (MLL proportional to 0.72*L + 10)
-    X['M_LL_proxy'] = 0.72 * X['Span_ft'] + 10.0
+    # 2. Unit cost ratios (economic sensitivity features)
+    X['ratio_strand_concrete'] = X['Strand'] / X['Concrete']   # Cp/Cc
+    X['ratio_rebar_concrete']  = X['Rebar']  / X['Concrete']   # Cs/Cc
+    X['ratio_rebar_strand']    = X['Rebar']  / X['Strand']     # Cs/Cp
 
-    # 3. Relative Material Cost Ratios
-    X['ratio_strand_concrete'] = X['Strand'] / X['Concrete']
-    X['ratio_rebar_concrete'] = X['Rebar'] / X['Concrete']
-    X['ratio_rebar_strand'] = X['Rebar'] / X['Strand']
+    # 3. Cost-span interaction (L² variant only — validated; L³ variant removed)
+    X['interaction_strand_L'] = X['ratio_strand_concrete'] * X['L_sq']  # (Cp/Cc)×L²
 
-    # 4. Cross-Domain Interaction Terms
-    X['interaction_strand_L'] = X['ratio_strand_concrete'] * X['L_sq']
-    X['strand_span_cube'] = X['Strand'] * X['L_cube'] / 1e6  # Dominant predictor of strand count
-    X['volumetric_stiffness'] = X['Concrete'] / (X['Strand'] * X['L_sq'] + 1.0)
-    X['span_concrete_ratio'] = X['Span_ft'] / X['Concrete']
-    X['span_strand_stiffness'] = (X['Span_ft'] ** 3) / (X['Strand'] * 1000.0)
-    X['elasticity_index'] = (X['Rebar'] * X['Strand']) / (X['Concrete'] ** 2)
-
-    # 5. Composite Cost Efficiency Features
-    # Total normalized cost per foot of span
-    X['total_cost_index'] = (X['Concrete'] / 100.0 + X['Strand'] + X['Rebar']) / X['Span_ft']
-    # Concrete fraction of total material cost mix (normalized)
-    total_raw = X['Concrete'] / 100.0 + X['Strand'] + X['Rebar']
-    X['concrete_cost_share'] = (X['Concrete'] / 100.0) / total_raw
+    # 4. Composite cost interaction (renamed from elasticity_index — avoids misleading label)
+    X['cost_interaction'] = (X['Rebar'] * X['Strand']) / (X['Concrete'] ** 2)  # Cp·Cs/Cc²
 
     return X[FEATURE_NAMES]
 
@@ -90,4 +90,3 @@ if __name__ == "__main__":
     X_features.to_csv("data/processed/features.csv", index=False)
     print(f"[Phase 1] Feature engineering complete. Features shape: {X_features.shape}")
     print(f"Features list: {list(X_features.columns)}")
-

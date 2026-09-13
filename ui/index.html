@@ -188,6 +188,53 @@
                 </div>
             </section>
         </main>
+
+        <!-- Bottom Panel: Fixed Design Assumptions & Material Limitations -->
+        <footer class="glass-card assumptions-panel">
+            <div class="card-header">
+                <div class="assumptions-title">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M12 8v4"/>
+                        <path d="M12 16h.01"/>
+                    </svg>
+                    <h2>Fixed Design Assumptions & Material Limitations</h2>
+                </div>
+                <p class="card-desc">Structural parameters and material design constants held fixed across all optimization training scenarios.</p>
+            </div>
+            <div class="assumptions-grid">
+                <div class="assumption-card">
+                    <div class="assumption-symbol">f′<sub>c</sub></div>
+                    <div class="assumption-val">8,000 <span class="unit">psi</span></div>
+                    <div class="assumption-label">Concrete Compressive Strength</div>
+                </div>
+                <div class="assumption-card">
+                    <div class="assumption-symbol">f′<sub>ci</sub></div>
+                    <div class="assumption-val">7,200 <span class="unit">psi</span></div>
+                    <div class="assumption-label">Initial Strength at Transfer</div>
+                </div>
+                <div class="assumption-card">
+                    <div class="assumption-symbol">γ<sub>c</sub></div>
+                    <div class="assumption-val">160 <span class="unit">pcf</span></div>
+                    <div class="assumption-label">Concrete Unit Weight</div>
+                </div>
+                <div class="assumption-card">
+                    <div class="assumption-symbol">f<sub>pu</sub></div>
+                    <div class="assumption-val">270 <span class="unit">ksi</span></div>
+                    <div class="assumption-label">Strand Tensile Strength</div>
+                </div>
+                <div class="assumption-card">
+                    <div class="assumption-symbol">d<sub>s</sub></div>
+                    <div class="assumption-val">0.6 <span class="unit">in</span></div>
+                    <div class="assumption-label">Strand Nominal Diameter</div>
+                </div>
+                <div class="assumption-card">
+                    <div class="assumption-symbol">f<sub>y</sub></div>
+                    <div class="assumption-val">60 <span class="unit">ksi</span></div>
+                    <div class="assumption-label">Mild Steel Yield Strength</div>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <script src="app.js?v=2.0.0"></script>

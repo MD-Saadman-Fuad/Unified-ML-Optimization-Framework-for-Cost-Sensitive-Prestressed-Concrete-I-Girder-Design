@@ -21,6 +21,16 @@ A structural beam used in bridge construction, made of concrete pre-tensioned wi
 
 Classical optimization (Differential Evolution, EVOP, Box Complex) finds the minimum-cost design but requires full reruns when material costs change. A trained surrogate model returns predictions in milliseconds for any new cost combination.
 
+### Fixed Design Assumptions & Material Limitations
+
+The following material design parameters were held constant across all dataset generation runs:
+- $f'_c = 8000\text{ psi}$ (28-day concrete compressive strength)
+- $f'_{ci} = 7200\text{ psi}$ (Initial concrete strength at prestress transfer)
+- $\gamma_c = 160\text{ pcf}$ (Concrete unit weight)
+- $f_{pu} = 270\text{ ksi}$ (Strand ultimate tensile strength, Grade 270)
+- $d_s = 0.6\text{ in}$ (Strand nominal diameter)
+- $f_y = 60\text{ ksi}$ (Mild rebar yield strength)
+
 ---
 
 ## Data Schema
@@ -146,35 +156,38 @@ def load_dataset(filepath: str) -> pd.DataFrame:
 ## Feature Engineering (Phase 1)
 
 These engineered features must be added to the raw inputs before training or inference.
-All formulas use the actual imperial-unit values — no unit conversion is needed.
+All formulas use actual imperial-unit values — no unit conversion needed.
 
-| Feature Name | Formula | Physical Meaning |
+**Active feature set: 11 validated features** (reduced from 18 after engineering review).
+
+| Feature Name | Formula | Rationale |
 |---|---|---|
-| `L_sq` | Span_ft ** 2 | Bending moment proxy (Mu proportional to L2) |
-| `L_cube` | Span_ft ** 3 | Harping position and deflection are L3-dominant |
-| `M_LL_proxy` | 0.72 * Span_ft + 10 | AASHTO HS20 live load bending moment proxy |
-| `ratio_strand_concrete` | Strand / Concrete | Strand-to-concrete cost ratio |
-| `ratio_rebar_concrete` | Rebar / Concrete | Rebar-to-concrete cost ratio |
-| `ratio_rebar_strand` | Rebar / Strand | Rebar-to-strand cost ratio |
-| `interaction_strand_L` | (Strand / Concrete) * Span_ft**2 | Strand cost penalty on long spans |
-| `strand_span_cube` | Strand * Span_ft**3 / 1e6 | Dominant predictor of strand count |
-| `volumetric_stiffness` | Concrete / (Strand * L_sq + 1) | Stiffness per unit strand cost |
-| `span_concrete_ratio` | Span_ft / Concrete | Span demand per concrete cost unit |
-| `span_strand_stiffness` | Span_ft**3 / (Strand * 1000) | Cubic span load relative to strand cost |
-| `elasticity_index` | (Rebar * Strand) / Concrete**2 | Cross-material cost interaction |
-| `total_cost_index` | (Concrete/100 + Strand + Rebar) / Span_ft | Normalized composite cost per foot |
-| `concrete_cost_share` | (Concrete/100) / total_raw | Concrete fraction of total material mix |
+| `L_sq` | Span_ft ** 2 | Bending moment proxy ($M_u \propto wL^2$) |
+| `L_cube` | Span_ft ** 3 | Nonlinear deflection/demand proxy (cubic span term) |
+| `ratio_strand_concrete` | Strand / Concrete | Strand-to-concrete unit cost ratio (Cp/Cc) |
+| `ratio_rebar_concrete` | Rebar / Concrete | Rebar-to-concrete unit cost ratio (Cs/Cc) |
+| `ratio_rebar_strand` | Rebar / Strand | Cross-steel unit cost ratio (Cs/Cp) |
+| `interaction_strand_L` | (Strand / Concrete) * Span_ft**2 | Strand cost × span demand interaction (L² only) |
+| `cost_interaction` | (Rebar * Strand) / Concrete**2 | Composite steel cost interaction (Cp·Cs/Cc²) |
+
+**Removed features (engineering review):**
+
+| Feature | Reason Removed |
+|---|---|
+| `M_LL_proxy` (0.72L+10) | Not a real AASHTO equation; redundant with Span_ft |
+| `strand_span_cube` | L³ interaction not validated vs L² form |
+| `volumetric_stiffness`, `span_concrete_ratio`, `span_strand_stiffness` | No established engineering basis |
+| `total_cost_index` | Artificial 100×/1000× scaling coefficients — not quantity-based |
+| `concrete_cost_share` | Depends on artificial total cost |
 
 ```python
 # src/features/build_features.py
-# Final feature vector: 18 columns
+# Active feature vector: 11 columns
 FEATURE_NAMES = [
     'Concrete', 'Strand', 'Rebar', 'Span_ft',
-    'L_sq', 'L_cube', 'M_LL_proxy',
+    'L_sq', 'L_cube',
     'ratio_strand_concrete', 'ratio_rebar_concrete', 'ratio_rebar_strand',
-    'interaction_strand_L', 'strand_span_cube', 'volumetric_stiffness',
-    'span_concrete_ratio', 'span_strand_stiffness', 'elasticity_index',
-    'total_cost_index', 'concrete_cost_share',
+    'interaction_strand_L', 'cost_interaction',
 ]
 ```
 
@@ -285,12 +298,15 @@ Cs* = (Cs - 2.18) / 1.27, L*  = (L - 100) / 80
 # Per-target LassoCV with 3rd-order polynomial expansion
 y_k = sum(beta_j * phi_j(Cc*, Cp*, Cs*, L*))  # only non-zero Lasso terms
 
-# Physics-derived (not regressed):
-Ng = round(37.0 / S) + 1   # bridge deck width = 37.0 ft
-Hp = 0.40 * L              # AASHTO midspan harping zone
+# All 7 targets are regressed via 3rd-order LassoCV:
+# Gd, S, Ng, P, Q, Ns, Hp — all 7 predicted from normalized inputs.
+
+# NOTE: Fixed formulas (Ng = round(37/S)+1 and Hp = 0.40*L) were both removed.
+# Ng assumed an unconfirmed B = 37 ft deck width; Hp depends on tendon drape and
+# harping angle constraints (e.g., 1:7 slope limit). Both are now regressed directly.
 ```
 Fit using `sklearn.preprocessing.PolynomialFeatures(degree=3)` then `LassoCV` per target.
-Mean R² improved from 0.32 (old OLS 2nd-order) → **0.53** (LassoCV 3rd-order sparse).
+Mean R² improved from 0.32 (old OLS 2nd-order) → **0.56** (LassoCV 3rd-order, all 7 targets regressed).
 Script: `src/equations/train_rsm_benchmark.py`
 
 ---

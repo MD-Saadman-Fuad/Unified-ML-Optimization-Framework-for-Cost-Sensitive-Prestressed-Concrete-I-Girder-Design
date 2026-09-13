@@ -17,7 +17,7 @@ This framework replaces expensive iterative structural optimizers (Differential 
 ┌──────────────────────────────────────────────────────────────────────────┐
 │          Phase 0-1 · DATA LOADING & FEATURE ENGINEERING                  │
 │  load_dataset_averaged() -> 119 unique cost-span families                │
-│  18 features: [Cc, Cp, Cs, L, L^2, L^3, M_LL, ratios, stiffness, ...]    │
+│  11 features: [Cc, Cp, Cs, L, L^2, L^3, cost-ratios, interactions]       │
 └───────────────────────────────────┬──────────────────────────────────────┘
                                     │
                                     ▼
@@ -53,33 +53,26 @@ This framework replaces expensive iterative structural optimizers (Differential 
 > **Why average?** The raw 595 rows contain 5 optimizer runs per cost-span combination. Training on raw rows causes 100% train/test leakage — every test combination also exists in training — so R² measures noise prediction, not signal. Averaging produces genuine, unseen test combos and yields true generalization performance.
 
 ### Phase 1 — Feature Engineering (`src/features/build_features.py`)
-Expands 4 raw inputs into **18 domain-engineered features**:
+Expands 4 raw inputs into **11 validated domain-engineered features** (reduced from 18 after engineering review):
 
-| Feature Name | Formula | Physical Meaning |
+| Feature Name | Formula | Rationale |
 |---|---|---|
 | `Concrete` | Cc | Raw concrete unit cost ($/yd³) |
 | `Strand` | Cp | Raw strand unit cost ($/ft/strand) |
 | `Rebar` | Cs | Raw rebar unit cost ($/lb) |
 | `Span_ft` | L | Bridge span length (ft) |
-| `L_sq` | Span_ft ** 2 | Bending moment proxy (Mu proportional to L²) |
-| `L_cube` | Span_ft ** 3 | Harping position and deflection (L³-dominant) |
-| `M_LL_proxy` | 0.72 * Span_ft + 10.0 | AASHTO HS20 live load moment proxy |
-| `ratio_strand_concrete` | Cp / Cc | Relative strand-to-concrete unit cost |
-| `ratio_rebar_concrete` | Cs / Cc | Relative rebar-to-concrete unit cost |
-| `ratio_rebar_strand` | Cs / Cp | Cross-steel relative cost ratio |
-| `interaction_strand_L` | (Cp / Cc) * (Span_ft ** 2) | Strand cost penalty on long spans |
-| `strand_span_cube` | (Cp / Cc) * (Span_ft ** 3) | Deflection-strand economic sensitivity |
-| `volumetric_stiffness` | (Span_ft ** 2) / Cc | Span structural demand per unit concrete cost |
-| `span_concrete_ratio` | Span_ft / Cc | Span length to concrete price index |
-| `span_strand_stiffness` | Span_ft / Cp | Span length to strand cost sensitivity |
-| `elasticity_index` | (Cp * Cs) / Cc | Combined steel-to-concrete economic index |
-| `total_cost_index` | Cc + 100*Cp + 1000*Cs | Weighted composite material cost indicator |
-| `concrete_cost_share` | Cc / total_cost_index | Relative concrete economic expenditure share |
+| `L_sq` | Span_ft ** 2 | Bending moment proxy ($M_u \propto wL^2$) |
+| `L_cube` | Span_ft ** 3 | Nonlinear deflection/demand proxy (cubic span) |
+| `ratio_strand_concrete` | Cp / Cc | Strand-to-concrete unit cost ratio |
+| `ratio_rebar_concrete` | Cs / Cc | Rebar-to-concrete unit cost ratio |
+| `ratio_rebar_strand` | Cs / Cp | Cross-steel unit cost ratio |
+| `interaction_strand_L` | (Cp / Cc) * Span_ft² | Strand cost × span demand (L² only) |
+| `cost_interaction` | (Cp * Cs) / Cc² | Composite steel cost interaction |
 
 ### Phase 2 — Preprocessing (`src/preprocessing/split_and_scale.py`)
 - Uses `load_dataset_averaged()` → 119 unique cost-span combination rows.
 - Stratified 80/20 split by `Span_ft` → **95 train / 24 test** combos.
-- Fits `StandardScaler` on 18 training features only → `models/scaler.pkl`.
+- Fits `StandardScaler` on 11 training features only → `models/scaler.pkl`.
 
 ### Phase 3 — Model Training (`src/models/train.py`)
 - Benchmarks RandomForest, GradientBoosting, and XGBoost.
@@ -101,12 +94,10 @@ Expands 4 raw inputs into **18 domain-engineered features**:
 | **Overall Mean** | **0.630** | — | **CV R²: 0.605** |
 
 ### Phase 4 — RSM Equations (`src/equations/train_rsm_benchmark.py`)
-- Fits **Sparse LassoCV 3rd-order polynomial** surfaces on MinMaxScaler-normalized inputs.
-- **N_g** (No. of Girders) and **H_p** (Harp Position) are replaced by physics-derived formulas:
-  - `Ng = round(37.0 / S) + 1`  (bridge deck width = 37.0 ft)
-  - `Hp = 0.40 × L`  (AASHTO midspan harping fraction)
-- LassoCV auto-prunes near-zero cross-terms — equations shrink from 15 terms → 1–29 terms per target.
-- Mean R² improved from 0.32 (old 2nd-order linear) → **0.53** (new LassoCV 3rd-order).
+- **All 7 targets** (including $N_g$ and $H_p$) are **regressed via 3rd-order LassoCV**.
+- Fixed formulas (`Ng = round(37/S)+1` and `Hp = 0.40*L`) were both removed — $N_g$ assumed an unconfirmed 37-ft deck width, while $H_p$ depends on tendon geometry and harping angle constraints (e.g. 1:7 slope limit).
+- LassoCV auto-prunes near-zero cross-terms — equations shrink from 35 terms → 1–19 terms per target.
+- Mean R² improved from 0.32 (old 2nd-order linear) → **0.56** (LassoCV 3rd-order, all 7 targets regressed).
 - Outputs `reports/equations/rsm_equations.json`.
 
 ### Phase 5 — Constraint Enforcement (`src/postprocess/constraints.py`)
@@ -158,8 +149,8 @@ python src/features/build_features.py
 ```
 Expected output:
 ```
-[Phase 1] Feature engineering complete. Features shape: (595, 18)
-Features list: ['Concrete', 'Strand', 'Rebar', 'Span_ft', 'L_sq', 'L_cube', 'M_LL_proxy', ...]
+[Phase 1] Feature engineering complete. Features shape: (595, 11)
+Features list: ['Concrete', 'Strand', 'Rebar', 'Span_ft', 'L_sq', 'L_cube', 'ratio_strand_concrete', ...]
 ```
 
 ---
@@ -172,7 +163,7 @@ Expected output:
 ```
   [Preprocessing] Using averaged dataset: 119 unique cost-span combinations
 [Phase 2] Preprocessing & splitting complete.
-X_train shape: (95, 18), X_test shape: (24, 18)
+X_train shape: (95, 11), X_test shape: (24, 11)
 Fitted scaler saved to models/scaler.pkl
 ```
 
@@ -326,13 +317,13 @@ project-root/
 │   ├── data/
 │   │   └── load_data.py             <- load_dataset() + load_dataset_averaged()
 │   ├── features/
-│   │   └── build_features.py        <- 18 domain-engineered features
+│   │   └── build_features.py        <- 11 validated domain-engineered features
 │   ├── preprocessing/
-│   │   └── split_and_scale.py       <- Averaged 95/24 split + scaler (18 features)
+│   │   └── split_and_scale.py       <- Averaged 95/24 split + scaler (11 features)
 │   ├── models/
 │   │   └── train.py                 <- RF benchmark + Optuna tuning
 │   ├── equations/
-│   │   └── rsm_fit.py               <- 2nd-order RSM polynomial fitting
+│   │   └── train_rsm_benchmark.py   <- Sparse LassoCV RSM equations
 │   └── postprocess/
 │       └── constraints.py           <- Physical bounds enforcement
 │
@@ -340,7 +331,7 @@ project-root/
 │   ├── scaler.pkl
 │   └── best_model.pkl
 │
-├── reports/                         <- Created by train.py + rsm_fit.py
+├── reports/                         <- Created by train.py + train_rsm_benchmark.py
 │   ├── model_benchmark.json
 │   ├── model_comparison.csv
 │   ├── scatter_plots/

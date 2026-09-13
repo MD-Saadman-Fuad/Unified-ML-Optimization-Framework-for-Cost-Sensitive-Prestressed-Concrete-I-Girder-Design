@@ -24,17 +24,20 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 from src.data.load_data import load_primary_dataset, INPUT_COLS, TARGET_COLS
 from sklearn.model_selection import train_test_split
 
-# Targets that ARE regressed (continuous, cost-driven)
+# ALL 7 targets are regressed via LassoCV.
+# Previously Ng used round(37.0/S)+1 and Hp used 0.40*L — both removed:
+#   Ng: assumed B=37 ft deck width, which is NOT confirmed for this dataset.
+#   Hp: assumed fixed harping fraction, which depends on tendon geometry & angle constraints.
+# Both are now data-driven regression targets.
 RSM_TARGETS = [
     'Gir Dep (in)',
     'Lat Spac (ft)',
+    'No. of Gir',         # Regressed — Ng=round(37/S)+1 deleted (B=37ft unconfirmed)
     'bot flange bot part depth (in)',
     'bot flange bot part width (in)',
-    'Number of strand per girder'
+    'Number of strand per girder',
+    'Harp Pos (ft)',       # Regressed — Hp=0.40*L deleted (not a universal equation)
 ]
-
-# Targets replaced by physics formulas (regression adds noise here)
-PHYS_TARGETS = ['No. of Gir', 'Harp Pos (ft)']
 
 LASSO_ALPHAS = [0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0]
 
@@ -93,24 +96,17 @@ def _extract_equations(poly, lasso_dict, input_cols, scale_info, order_label):
             "note": f"Inputs normalized to [0,1]. Scale ranges: {scale_info}"
         }
 
-    # Physics-derived entries
-    equations["No. of Gir"] = {
-        "equation": "round(37.0 / Lat_Spac_ft) + 1",
-        "active_terms": 1,
-        "note": "Physics-derived from bridge deck width = 37.0 ft. Not a regression target."
-    }
-    equations["Harp Pos (ft)"] = {
-        "equation": "0.40 * Span_ft",
-        "active_terms": 1,
-        "note": "Physics-derived: harping at 40% of span (within AASHTO 0.30–0.50L zone). Not a regression target."
-    }
+    # All 7 targets are LassoCV regression targets — no physics formulas.
     return equations
 
 
 def train_rsm_benchmark(filepath: str = "Girder_Dataset.xlsx"):
     """
     Trains and evaluates Sparse LassoCV 2nd-Order RSM with normalized inputs.
-    Physics-derives Ng and Hp. Conditionally tests 3rd-Order LassoCV RSM.
+    All 7 targets are regressed (no physics formulas):
+      - Ng=round(37/S)+1 deleted: B=37ft deck width not confirmed for this dataset.
+      - Hp=0.40*L deleted: harping fraction depends on tendon geometry, not a fixed %.
+    Conditionally tests 3rd-Order LassoCV RSM.
     """
     df = load_primary_dataset(filepath)
     X_raw = df[INPUT_COLS].copy()
@@ -148,24 +144,13 @@ def train_rsm_benchmark(filepath: str = "Girder_Dataset.xlsx"):
         preds[:, i] = lasso.predict(X_te_poly)
         lasso_models[col] = lasso
 
-    # ── Step 4: Physics-derived Ng and Hp ────────────────────────────────────
-    S_pred = preds[:, TARGET_COLS.index('Lat Spac (ft)')]
-    L_vals = X_test_raw['Span_ft'].values
-
-    Ng_phys = np.array([int(round(37.0 / max(s, 2.0))) + 1 for s in S_pred])
-    Ng_phys = np.clip(Ng_phys, 6, 13).astype(float)
-    Hp_phys = 0.40 * L_vals
-
-    preds[:, TARGET_COLS.index('No. of Gir')]    = Ng_phys
-    preds[:, TARGET_COLS.index('Harp Pos (ft)')] = Hp_phys
-
+    # ── Step 4: All preds filled via LassoCV above (no physics overrides) ────
     metrics_2nd = calculate_metrics(Y_test, preds)
 
     print(f"Sparse LassoCV 2nd-Order RSM Test Mean R2: {metrics_2nd['mean_r2']:.5f}")
     for col in TARGET_COLS:
         m = metrics_2nd[col]
-        tag = " [physics-derived]" if col in PHYS_TARGETS else \
-              f" [alpha={lasso_models[col].alpha_:.5f}, terms={int(np.sum(lasso_models[col].coef_ != 0))}]"
+        tag = f" [alpha={lasso_models[col].alpha_:.5f}, terms={int(np.sum(lasso_models[col].coef_ != 0))}]"
         print(f"  Target: {col:<36} | R2 = {m['r2']:.4f} | RMSE = {m['rmse']:.3f}{tag}")
 
     # ── Step 5: Conditional 3rd-Order check ──────────────────────────────────
@@ -191,8 +176,7 @@ def train_rsm_benchmark(filepath: str = "Girder_Dataset.xlsx"):
             preds_3rd[:, i] = l3.predict(X_te_3rd)
             lasso3_models[col] = l3
 
-        preds_3rd[:, TARGET_COLS.index('No. of Gir')]    = Ng_phys
-        preds_3rd[:, TARGET_COLS.index('Harp Pos (ft)')] = Hp_phys
+        # All preds_3rd filled via lasso3_models regression (no physics overrides)
 
         metrics_3rd = calculate_metrics(Y_test, preds_3rd)
         print(f"3rd-Order Sparse LassoCV RSM Test Mean R2: {metrics_3rd['mean_r2']:.5f}")
@@ -220,7 +204,7 @@ def train_rsm_benchmark(filepath: str = "Girder_Dataset.xlsx"):
         "lasso_per_target": final_lasso,
         "poly": final_poly,
         "input_scaler": input_scaler,
-        "phys_targets": PHYS_TARGETS
+        "phys_targets": []   # No physics-derived targets; all 7 are regressed
     }
     joblib.dump(model_artifact, "models/rsm_model.pkl")
     joblib.dump(final_poly, "models/rsm_poly_transformer.pkl")
@@ -230,8 +214,9 @@ def train_rsm_benchmark(filepath: str = "Girder_Dataset.xlsx"):
         "normalization": "MinMaxScaler [0,1] on all 4 raw inputs before polynomial expansion",
         "method": "LassoCV sparse regression — near-zero cross-terms auto-pruned per target",
         "physics_derived": {
-            "No. of Gir": "round(37.0 / S) + 1   (bridge deck width = 37.0 ft)",
-            "Harp Pos (ft)": "0.40 * Span_ft   (AASHTO midspan harping zone)"
+            # All targets are LassoCV regression targets.
+            # Ng=round(37.0/S)+1 deleted: B=37ft deck width not confirmed for this dataset.
+            # Hp=0.40*L deleted: harping fraction is not a universal equation.
         },
         "input_scale_ranges": scale_info,
         "metrics": final_metrics,

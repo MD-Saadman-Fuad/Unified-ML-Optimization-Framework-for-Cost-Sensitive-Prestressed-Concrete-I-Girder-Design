@@ -55,6 +55,19 @@ f: (Concrete, Strand, Rebar, Span_ft)  --18 Engineered Features + ML Pipeline-->
 | Ns | `Number of strand per girder` | Number of Prestressing Strands | count | Even integer (multiples of 2) |
 | Hp | `Harp Pos (ft)` | Harping Position | feet | Continuous |
 
+### Fixed Design Assumptions & Material Limitations
+
+The framework operates under the following fixed material properties and design constants:
+
+| Parameter | Symbol | Fixed Value | Units | Description |
+|---|---|---|---|---|
+| Concrete 28-day Strength | $f'_c$ | **8,000** | psi | Compressive design strength |
+| Concrete Initial Strength | $f'_{ci}$ | **7,200** | psi | Strength at initial prestress transfer |
+| Concrete Unit Density | $\gamma_c$ | **160** | pcf | Unit weight of prestressed concrete |
+| Strand Ultimate Strength | $f_{pu}$ | **270** | ksi | Grade 270 low-relaxation 7-wire strand |
+| Strand Nominal Diameter | $d_s$ | **0.6** | in | Standard 0.6-inch diameter strand |
+| Mild Steel Yield Strength | $f_y$ | **60** | ksi | Grade 60 mild steel reinforcing bar |
+
 ---
 
 ## Dataset
@@ -131,7 +144,7 @@ Unified-ML-Optimization-Framework/
 │   ├── features/               # build_features.py — feature engineering
 │   ├── models/                 # train.py, tune.py
 │   ├── postprocess/            # constraints.py — physical constraint enforcement
-│   └── equations/              # pysr_fit.py, rsm_fit.py
+│   └── equations/              # train_rsm_benchmark.py — sparse LassoCV RSM
 ├── api/                        # FastAPI inference backend
 ├── ui/                         # HTML/JS/SVG frontend
 ├── models/                     # Saved .pkl / .pt model artifacts

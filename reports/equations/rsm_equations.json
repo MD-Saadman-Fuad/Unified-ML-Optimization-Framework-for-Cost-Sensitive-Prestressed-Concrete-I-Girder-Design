@@ -2,10 +2,7 @@
   "selected_degree": 3,
   "normalization": "MinMaxScaler [0,1] on all 4 raw inputs before polynomial expansion",
   "method": "LassoCV sparse regression \u2014 near-zero cross-terms auto-pruned per target",
-  "physics_derived": {
-    "No. of Gir": "round(37.0 / S) + 1   (bridge deck width = 37.0 ft)",
-    "Harp Pos (ft)": "0.40 * Span_ft   (AASHTO midspan harping zone)"
-  },
+  "physics_derived": {},
   "input_scale_ranges": {
     "Concrete": {
       "min": 405.0,
@@ -38,10 +35,10 @@
       "mape_pct": 5.5337
     },
     "No. of Gir": {
-      "r2": 0.78311,
-      "rmse": 0.5672,
-      "rmse_pct_range": 14.1789,
-      "mape_pct": 6.1657
+      "r2": 0.74608,
+      "rmse": 0.6137,
+      "rmse_pct_range": 15.3414,
+      "mape_pct": 6.4902
     },
     "bot flange bot part depth (in)": {
       "r2": -0.0038,
@@ -62,21 +59,21 @@
       "mape_pct": 4.1374
     },
     "Harp Pos (ft)": {
-      "r2": 0.47217,
-      "rmse": 6.8236,
-      "rmse_pct_range": 19.4802,
-      "mape_pct": 10.6492
+      "r2": 0.7208,
+      "rmse": 4.9628,
+      "rmse_pct_range": 14.1678,
+      "mape_pct": 6.5384
     },
-    "mean_r2": 0.53104
+    "mean_r2": 0.56127
   },
   "equations": {
     "Gir Dep (in)": "+64.39655 -2.611530 * Concrete +8.082083 * Strand -1.829686 * Rebar +13.118847 * Span_ft -1.795643 * Concrete * Strand -0.092146 * Concrete * Rebar +5.226232 * Concrete * Span_ft -0.718471 * Strand * Rebar -8.804964 * Strand * Span_ft +4.948171 * Rebar * Span_ft -21.510357 * Span_ft^2 +4.704676 * Concrete^3 -3.309635 * Concrete^2 * Strand -7.778171 * Concrete^2 * Span_ft +1.466792 * Concrete * Strand^2 -0.374861 * Concrete * Strand * Rebar +3.639595 * Concrete * Strand * Span_ft -0.094060 * Concrete * Rebar^2 +0.060750 * Concrete * Rebar * Span_ft -3.497298 * Strand^3 -1.828804 * Strand^2 * Rebar +5.330948 * Strand^2 * Span_ft +1.190639 * Strand * Rebar^2 +1.828104 * Strand * Rebar * Span_ft -1.188368 * Strand * Span_ft^2 +0.079432 * Rebar^3 -1.475034 * Rebar^2 * Span_ft -2.241397 * Rebar * Span_ft^2 +14.604557 * Span_ft^3",
     "Lat Spac (ft)": "+6.59336 +0.018126 * Strand +1.011926 * Span_ft +0.004637 * Concrete * Strand +0.009530 * Concrete * Rebar * Span_ft -0.183097 * Rebar^3 -2.963101 * Span_ft^3",
+    "No. of Gir": "+6.56762 -1.443099 * Span_ft -0.005096 * Concrete * Rebar * Span_ft +0.238172 * Rebar^3 +4.443199 * Span_ft^3",
     "bot flange bot part depth (in)": "+7.61435 -0.152074 * Strand",
     "bot flange bot part width (in)": "+26.97994 -2.670132 * Concrete +1.168292 * Rebar +36.141863 * Span_ft +3.287211 * Concrete * Strand^2 +1.685192 * Concrete * Rebar * Span_ft +1.301189 * Strand^3 -1.704269 * Rebar^3 -21.830069 * Span_ft^3",
     "Number of strand per girder": "+40.68878 +0.167666 * Concrete -3.435314 * Strand -0.152297 * Rebar +44.722735 * Span_ft -2.523033 * Strand * Rebar +0.180941 * Strand * Span_ft +73.009249 * Span_ft^2 -1.096036 * Concrete^3 +0.873585 * Concrete^2 * Strand +8.386545 * Concrete^2 * Span_ft +1.204041 * Concrete * Strand * Rebar +1.594327 * Concrete * Rebar^2 +1.772913 * Concrete * Rebar * Span_ft -9.830567 * Concrete * Span_ft^2 +1.642866 * Strand^3 +6.296392 * Strand * Rebar * Span_ft -6.034235 * Strand * Span_ft^2 -3.967282 * Rebar^2 * Span_ft -57.589712 * Span_ft^3",
-    "No. of Gir": "round(37.0 / Lat_Spac_ft) + 1",
-    "Harp Pos (ft)": "0.40 * Span_ft"
+    "Harp Pos (ft)": "+41.92549 +10.177864 * Span_ft +9.780481 * Span_ft^2 -1.606766 * Strand * Rebar^2 -6.934636 * Rebar^2 * Span_ft +2.359626 * Span_ft^3"
   },
   "equations_detail": {
     "Gir Dep (in)": {
@@ -90,6 +87,13 @@
       "equation": "+6.59336 +0.018126 * Strand +1.011926 * Span_ft +0.004637 * Concrete * Strand +0.009530 * Concrete * Rebar * Span_ft -0.183097 * Rebar^3 -2.963101 * Span_ft^3",
       "active_terms": 6,
       "lasso_alpha": 0.005,
+      "degree": 3,
+      "note": "Inputs normalized to [0,1]. Scale ranges: {'Concrete': {'min': 405.0, 'max': 600.0}, 'Strand': {'min': 1.26, 'max': 2.23}, 'Rebar': {'min': 2.18, 'max': 3.45}, 'Span_ft': {'min': 100.0, 'max': 180.0}}"
+    },
+    "No. of Gir": {
+      "equation": "+6.56762 -1.443099 * Span_ft -0.005096 * Concrete * Rebar * Span_ft +0.238172 * Rebar^3 +4.443199 * Span_ft^3",
+      "active_terms": 4,
+      "lasso_alpha": 0.01,
       "degree": 3,
       "note": "Inputs normalized to [0,1]. Scale ranges: {'Concrete': {'min': 405.0, 'max': 600.0}, 'Strand': {'min': 1.26, 'max': 2.23}, 'Rebar': {'min': 2.18, 'max': 3.45}, 'Span_ft': {'min': 100.0, 'max': 180.0}}"
     },
@@ -114,15 +118,12 @@
       "degree": 3,
       "note": "Inputs normalized to [0,1]. Scale ranges: {'Concrete': {'min': 405.0, 'max': 600.0}, 'Strand': {'min': 1.26, 'max': 2.23}, 'Rebar': {'min': 2.18, 'max': 3.45}, 'Span_ft': {'min': 100.0, 'max': 180.0}}"
     },
-    "No. of Gir": {
-      "equation": "round(37.0 / Lat_Spac_ft) + 1",
-      "active_terms": 1,
-      "note": "Physics-derived from bridge deck width = 37.0 ft. Not a regression target."
-    },
     "Harp Pos (ft)": {
-      "equation": "0.40 * Span_ft",
-      "active_terms": 1,
-      "note": "Physics-derived: harping at 40% of span (within AASHTO 0.30\u20130.50L zone). Not a regression target."
+      "equation": "+41.92549 +10.177864 * Span_ft +9.780481 * Span_ft^2 -1.606766 * Strand * Rebar^2 -6.934636 * Rebar^2 * Span_ft +2.359626 * Span_ft^3",
+      "active_terms": 5,
+      "lasso_alpha": 0.1,
+      "degree": 3,
+      "note": "Inputs normalized to [0,1]. Scale ranges: {'Concrete': {'min': 405.0, 'max': 600.0}, 'Strand': {'min': 1.26, 'max': 2.23}, 'Rebar': {'min': 2.18, 'max': 3.45}, 'Span_ft': {'min': 100.0, 'max': 180.0}}"
     }
   }
 }

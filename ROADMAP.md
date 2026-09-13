@@ -91,10 +91,10 @@
 - [ ] **1.11** Unit test `build_features()` with at least 3 known input rows and hand-calculated expected outputs
 - [ ] **1.12** Save engineered feature matrix to `data/processed/features.csv`
 
-**Final X matrix (18 features):**
-`[Concrete, Strand, Rebar, Span_ft, L_sq, L_cube, M_LL_proxy, ratio_strand_concrete, ratio_rebar_concrete, ratio_rebar_strand, interaction_strand_L, strand_span_cube, volumetric_stiffness, span_concrete_ratio, span_strand_stiffness, elasticity_index, total_cost_index, concrete_cost_share]`
+**Final X matrix (11 validated features — engineering-reviewed):**
+`[Concrete, Strand, Rebar, Span_ft, L_sq, L_cube, ratio_strand_concrete, ratio_rebar_concrete, ratio_rebar_strand, interaction_strand_L, cost_interaction]`
 
-**Added in v2 (post accuracy fix):** L_cube, M_LL_proxy, ratio_rebar_strand, strand_span_cube, total_cost_index, concrete_cost_share
+**Removed in engineering review:** M_LL_proxy, strand_span_cube, volumetric_stiffness, span_concrete_ratio, span_strand_stiffness, elasticity_index (renamed→cost_interaction), total_cost_index, concrete_cost_share
 
 **Deliverable:** `notebooks/01_eda.ipynb`, `src/features/build_features.py`, `data/processed/features.csv`
 
@@ -189,7 +189,7 @@
 - [ ] **4.10** Build summary table: PySR vs RSM vs ML model R2 for each target
 - [ ] **4.11** Select best equation set for Web UI embedding (balance complexity vs accuracy)
 
-**Deliverable:** `src/equations/pysr_fit.py`, `src/equations/rsm_fit.py`, `reports/equations/`
+**Deliverable:** `src/equations/train_rsm_benchmark.py`, `reports/equations/`
 
 ---
 

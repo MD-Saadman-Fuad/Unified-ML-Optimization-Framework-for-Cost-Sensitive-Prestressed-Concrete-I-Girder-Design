@@ -48,19 +48,13 @@ def enforce_constraints(pred: dict, L_ft: float, bridge_width_ft: float = 40.0) 
         spacing_ft = 6.0
 
     # -------------------------------------------------------------------------
-    # 2. Number of Girders (Ng): Must agree with spacing + fixed bridge width
-    #    Clear coverage width W_g = W_bridge - overhangs ~ 37.0 ft.
-    #    Ng = round(W_g / S) + 1, bounded in [6, 13].
+    # 2. Number of Girders (Ng): Rounded to integer and bounded [6, 13]
     # -------------------------------------------------------------------------
-    W_g_ft = bridge_width_ft - 3.0  # ~37.0 ft girder coverage
     if "No. of Gir" in out:
-        ng_calc = int(round(W_g_ft / spacing_ft)) + 1
+        ng_raw = out["No. of Gir"]
         ng_min = 8 if L_ft >= 175 else 6
-        ng_final = max(ng_min, min(13, ng_calc))
+        ng_final = max(ng_min, min(13, int(round(ng_raw))))
         out["No. of Gir"] = ng_final
-        # Re-align spacing slightly to guarantee 100% mathematical agreement: S = W_g / (Ng - 1)
-        spacing_ft = max(2.0, min(8.2, round((W_g_ft / (ng_final - 1)) * 4.0) / 4.0))
-        out["Lat Spac (ft)"] = spacing_ft
 
     # -------------------------------------------------------------------------
     # 3. Girder Depth (Gd): Gd < 72 in (Snap to 0.5 in, clamp [45.0, 71.5])
@@ -178,7 +172,7 @@ def enforce_constraints(pred: dict, L_ft: float, bridge_width_ft: float = 40.0) 
     checks["user_explicit_constraints"] = {
         "girder_depth_below_72in": gd_in < 72.0,
         "spacing_in_range_2_to_8.2ft": 2.0 <= spacing_ft <= 8.2,
-        "girder_count_agrees_with_spacing": out["No. of Gir"] == int(round(37.0 / spacing_ft)) + 1,
+        "girder_count_in_valid_range": 6 <= out["No. of Gir"] <= 13,
         "bottom_flange_depth_below_25in": p_in < 25.0,
         "bottom_flange_width_below_spacing": q_in < (spacing_ft * 12.0),
         "strands_even_and_physically_fit": (ns_strands % 2 == 0) and (ns_strands <= max_physical_strands),

@@ -446,3 +446,65 @@ h1 {
     font-size: 0.72rem;
     color: var(--text-muted);
 }
+
+/* Assumptions Panel (Footer Card) */
+.assumptions-panel {
+    grid-column: 1 / -1;
+    margin-top: 0.5rem;
+}
+
+.assumptions-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.assumptions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+    margin-top: 1rem;
+}
+
+.assumption-card {
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(56, 189, 248, 0.15);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.assumption-card:hover {
+    background: rgba(56, 189, 248, 0.05);
+    border-color: rgba(56, 189, 248, 0.35);
+    transform: translateY(-2px);
+}
+
+.assumption-symbol {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.assumption-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.assumption-val .unit {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.assumption-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.2;
+}

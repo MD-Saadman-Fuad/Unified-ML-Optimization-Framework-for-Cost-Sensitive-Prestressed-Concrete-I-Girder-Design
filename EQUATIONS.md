@@ -27,73 +27,129 @@
 | N_s | `Number of strand per girder` | Total Prestressing Strands | count | Even Integer in [32, 122] |
 | H_p | `Harp Pos (ft)` | Harping Position Along Span | feet | Continuous in [0, L] |
 
+### Fixed Design Assumptions & Material Limitations
+
+The following structural material parameters were held **constant** across all optimizer training runs and define the fixed design boundaries of this ML surrogate framework:
+
+$$
+\begin{aligned}
+f'_c &= 8000\text{ psi} && \text{(28-day Concrete Compressive Strength)} \\
+f'_{ci} &= 7200\text{ psi} && \text{(Initial Concrete Strength at Prestress Transfer)} \\
+\gamma_c &= 160\text{ pcf} && \text{(Concrete Unit Weight / Density)} \\
+f_{pu} &= 270\text{ ksi} && \text{(Ultimate Tensile Strength of Prestressing Strands)} \\
+d_s &= 0.6\text{ in} && \text{(Prestressing Strand Nominal Diameter)} \\
+f_y &= 60\text{ ksi} && \text{(Yield Strength of Mild Reinforcing Steel)}
+\end{aligned}
+$$
+
+| Symbol | Parameter | Value | Units | Description / Standard |
+|---|---|---|---|---|
+| $f'_c$ | Concrete Compressive Strength | **8,000** | psi | 28-day concrete compressive design strength |
+| $f'_{ci}$ | Initial Concrete Strength | **7,200** | psi | Concrete strength at initial prestress transfer |
+| $\gamma_c$ | Concrete Unit Density | **160** | pcf | Unit weight of reinforced/prestressed concrete |
+| $f_{pu}$ | Strand Tensile Strength | **270** | ksi | Grade 270 low-relaxation 7-wire prestressing strand |
+| $d_s$ | Strand Nominal Diameter | **0.6** | in | Standard 0.6-inch diameter prestressing strand |
+| $f_y$ | Mild Steel Yield Strength | **60** | ksi | Grade 60 mild steel reinforcing bar yield stress |
+
 ---
 
 ## 2. Feature Engineering Equations
 
-Raw inputs are expanded into an 18-dimensional feature vector ($X_{\text{feat}}$) incorporating structural mechanics and cost interaction dynamics (`src/features/build_features.py`).
+Raw inputs are expanded into an **11-dimensional validated feature vector** ($X_{\text{feat}}$) incorporating span demand proxies and unit cost interaction terms (`src/features/build_features.py`).
 
 $$
-X_{\text{feat}} \in \mathbb{R}^{18} = \begin{bmatrix} 
-C_c, & C_p, & C_s, & L, & L^2, & L^3, & M_{\text{LL}}, \\
-\frac{C_p}{C_c}, & \frac{C_s}{C_c}, & \frac{C_s}{C_p}, & \left(\frac{C_p}{C_c}\right) L^2, & \left(\frac{C_p}{C_c}\right) L^3, \\
-\frac{L^2}{C_c}, & \frac{L}{C_c}, & \frac{L}{C_p}, & \frac{C_p C_s}{C_c}, & C_{\text{tot}}, & \frac{C_c}{C_{\text{tot}}}
+X_{\text{feat}} \in \mathbb{R}^{11} = \begin{bmatrix} 
+C_c, & C_p, & C_s, & L, & L^2, & L^3, \\
+\frac{C_p}{C_c}, & \frac{C_s}{C_c}, & \frac{C_s}{C_p}, & \left(\frac{C_p}{C_c}\right) L^2, & \frac{C_p C_s}{C_c^2}
 \end{bmatrix}^T
 $$
 
-### Equation 2.1: Bending Moment Demand Proxy (L²)
+> **Engineering Review Note:** Features were audited and reduced from 18 to 11. Removed features lacked either engineering justification or grounding in actual dataset quantities. See inline verdicts below.
+
+---
+
+### Equation 2.1: Bending Moment Demand Proxy ($L^2$)
+
 $$
 f_{L^2}(L) = L^2
 $$
-* **Mechanics Rationale:** Mid-span bending moment ($M_u$) scales quadratically with span length under uniform load ($M_u \propto w L^2$).
 
-### Equation 2.2: Harping Position & Deflection Demand Proxy (L³)
+* **Rationale:** Mid-span bending moment scales quadratically with span under uniform load ($M_u \propto w L^2$). Well-established in structural mechanics and supported by dataset correlation. ✅ **KEEP**
+
+---
+
+### Equation 2.2: Span-Cubed Demand Proxy ($L^3$)
+
 $$
 f_{L^3}(L) = L^3
 $$
-* **Mechanics Rationale:** Harping position and beam deflection scale with span cubed ($L^3$).
 
-### Equation 2.3: AASHTO HS-20 Live Load Moment Proxy
-$$
-f_{M_{\text{LL}}}(L) = 0.72 L + 10.0
-$$
-* **Mechanics Rationale:** Linear approximation of AASHTO HS-20 truck live load bending moment demand.
+* **Rationale:** Represents the nonlinear increase of beam deflection and demand with span length. Included as an optional nonlinear span feature. ⚠️ **KEEP** — note: does not claim harping position itself follows $L^3$; that claim is not established by this dataset.
 
-### Equation 2.4: Strand-to-Concrete Unit Cost Ratio
+---
+
+### Equation 2.3: Strand-to-Concrete Unit Cost Ratio
+
 $$
 f_{\text{ratio,strand}}(C_p, C_c) = \frac{C_p}{C_c}
 $$
-* **Economic Rationale:** Captures relative unit price sensitivity between high-strength steel strands and bulk concrete.
 
-### Equation 2.5: Rebar-to-Concrete Unit Cost Ratio
+* **Rationale:** Economic sensitivity feature — captures how expensive prestressing strand is relative to concrete. Dataset directly varies both $C_p$ and $C_c$, making this ratio meaningful. ✅ **KEEP**
+
+---
+
+### Equation 2.4: Rebar-to-Concrete Unit Cost Ratio
+
 $$
 f_{\text{ratio,rebar}}(C_s, C_c) = \frac{C_s}{C_c}
 $$
-* **Economic Rationale:** Captures relative cost trade-off between mild shear reinforcement steel and concrete volume.
 
-### Equation 2.6: Rebar-to-Strand Cross-Steel Cost Ratio
+* **Rationale:** Economic sensitivity feature — captures relative rebar vs concrete unit price. Relevant for cost-sensitive optimization. ✅ **KEEP**
+
+---
+
+### Equation 2.5: Rebar-to-Strand Cross-Steel Cost Ratio
+
 $$
 f_{\text{ratio,rebar-strand}}(C_s, C_p) = \frac{C_s}{C_p}
 $$
 
-### Equation 2.7: Long-Span Strand Cost Penalty Interaction (Quadratic & Cubic)
+* **Rationale:** Economic feature — represents the relative unit cost trade-off between the two steel material types. Especially useful for cost sensitivity analysis. ✅ **KEEP**
+
+---
+
+### Equation 2.6: Strand Cost × Span Demand Interaction
+
 $$
 f_{\text{inter,strand-L2}}(C_p, C_c, L) = \left( \frac{C_p}{C_c} \right) \times L^2
 $$
-$$
-f_{\text{inter,strand-L3}}(C_p, C_c, L) = \left( \frac{C_p}{C_c} \right) \times L^3
-$$
-* **Interaction Rationale:** Models the compounding financial impact of high strand unit costs on long spans requiring high prestressing forces.
 
-### Equation 2.8: Volumetric Structural Demand & Price Indices
+* **Rationale:** Captures compounding effect of high strand unit cost on long spans. The $L^2$ variant is retained as it aligns with moment demand scaling. ⚠️ **KEEP ($L^2$ only)** — the $L^3$ interaction variant is not independently validated relative to the $L^2$ form and has been removed.
+
+---
+
+### Equation 2.7: Composite Cost Interaction
+
 $$
-f_{\text{vol-stiff}} = \frac{L^2}{C_c}, \quad f_{\text{span-Cc}} = \frac{L}{C_c}, \quad f_{\text{span-Cp}} = \frac{L}{C_p}
+f_{\text{cost-int}}(C_p, C_s, C_c) = \frac{C_p \cdot C_s}{C_c^2}
 $$
 
-### Equation 2.9: Composite Economic Indices
-$$
-f_{\text{elasticity}} = \frac{C_p \cdot C_s}{C_c}, \quad C_{\text{tot}} = C_c + 100 C_p + 1000 C_s, \quad f_{\text{concrete-share}} = \frac{C_c}{C_{\text{tot}}}
-$$
+* **Rationale:** Captures joint steel cost pressure relative to concrete cost squared. Retained as an experimental interaction term. ⚠️ **KEEP** — renamed from `elasticity_index` (previous label was misleading; this is not a structural elasticity parameter).
+
+---
+
+> **Removed Features (not in active model):**
+>
+> | Feature | Expression | Reason Removed |
+> |:---|:---|:---|
+> | `M_LL_proxy` | $0.72L + 10$ | Not a real AASHTO equation; redundant with $L$ |
+> | `strand_span_cube` | $C_p \cdot L^3$ | $L^3$ interaction not validated vs $L^2$ variant |
+> | `volumetric_stiffness` | $C_c/(C_p L^2)$ | No evidence of real engineering relationship |
+> | `span_concrete_ratio` | $L/C_c$ | Likely redundant; no established basis |
+> | `span_strand_stiffness` | $L^3/C_p$ | No established basis; redundant |
+> | `total_cost_index` | $(C_c/100 + C_p + C_s)/L$ | Artificial scaling coefficients (100×, 1000×) — not quantity-based |
+> | `concrete_cost_share` | $C_c / C_{\text{tot}}$ | Depends on artificial total cost; invalid without real quantities |
+
 
 ---
 
@@ -101,12 +157,12 @@ $$
 
 ### Equation 3.1: Standard Score (Z-Score) Normalization
 $$
-z_{j} = \frac{x_{j} - \mu_{j}}{\sigma_{j}} \quad \text{for } j = 1, 2, \dots, 18
+z_{j} = \frac{x_{j} - \mu_{j}}{\sigma_{j}} \quad \text{for } j = 1, 2, \dots, 11
 $$
 
 Where:
 * $x_{j}$ is the raw value of feature $j$.
-* $\mu_{j}$ is the sample mean computed **strictly on training data** ($N_{\text{train}} = 95$ averaged unique cost-span families).
+* $\mu_{j}$ is the sample mean computed **strictly on training data** ($N_{\text{train}}$ averaged unique cost-span families).
 * $\sigma_{j}$ is the sample standard deviation computed on training data (`models/scaler.pkl`).
 
 ---
@@ -126,8 +182,8 @@ $$
 $$
 
 * $B$ is the number of ensemble trees (`n_estimators = 1000`).
-* $T_{b,k}(Z)$ is the individual decision tree trained on a bootstrap sample of the training data, mapping standardized feature vector $Z \in \mathbb{R}^{18}$ to leaf values.
-* Split decisions evaluate a random subset of features ($\sqrt{18} \approx 4$ features via `max_features = 'sqrt'`).
+* $T_{b,k}(Z)$ is the individual decision tree trained on a bootstrap sample of the training data, mapping standardized feature vector $Z \in \mathbb{R}^{11}$ to leaf values.
+* Split decisions evaluate a random subset of features ($\sqrt{11} \approx 3$ features via `max_features = 'sqrt'`).
 
 *(For benchmarking, MultiOutput XGBoost and GradientBoosting models are also evaluated; see `reports/model_benchmark.json`).*
 
@@ -135,7 +191,7 @@ $$
 
 ## 5. Closed-Form Response Surface Methodology (RSM) Equations
 
-Response Surface Methodology now fits **Sparse LassoCV 3rd-order polynomial models** on **normalized inputs** (all scaled to [0, 1] via MinMaxScaler before expansion). This approach auto-prunes near-zero cross-terms via L1 regularization, producing compact, interpretable equations. Two targets — **N_g** and **H_p** — are physically constrained and replaced by closed-form physics formulas instead of regression.
+Response Surface Methodology fits **Sparse LassoCV 3rd-order polynomial models** on **normalized inputs** (all scaled to [0, 1] via MinMaxScaler before expansion). This approach auto-prunes near-zero cross-terms via L1 regularization, producing compact, interpretable equations. All 7 target variables ($G_d, S, N_g, P, Q, N_s, H_p$) are regressed via LassoCV, with physical bounds enforced during post-processing.
 
 **Script:** `src/equations/train_rsm_benchmark.py`  
 **Output:** `reports/equations/rsm_equations.json`
@@ -244,30 +300,26 @@ S [feet] =
   -2.963 × L*³                    ← cubic span correction (spacing is not purely linear in span)
 ```
 
-**Engineering note:** Lateral spacing $S$ is directly tied to the bridge deck width (37.0 ft) and girder count. The dominant predictor is span length ($L^*$ coefficient = 1.012), followed by a cubic correction. Concrete and rebar cost effects are small but meaningful for long spans.
-
-**How to back-calculate:** If the equation gives $S = 6.1$ ft for a 140-ft span → $N_g = \text{round}(37/6.1)+1 = 7$ girders.
+**Engineering note:** Lateral spacing $S$ is tied to bridge deck width and girder count. The dominant predictor is span length ($L^*$ coefficient = 1.012), followed by a cubic correction. Concrete and rebar cost effects are small but meaningful for long spans.
 
 ---
 
-### Equation 5.3: Number of Girders ($N_g$, integer count) — R² = 0.7831 *(Physics-Derived)*
+### Equation 5.3: Number of Girders ($N_g$, integer count) — R² = 0.7138 ⚠️ MODIFIED
 
-> **Not a regression target.** $N_g$ is not regressed on cost inputs — it is computed directly from the lateral spacing $S$ using the bridge deck constraint.
+> **ML Regression Target.** $N_g$ is predicted from data via LassoCV sparse polynomial regression — it is **not** computed from a fixed 37-ft deck width.
 
 $$
-\boxed{N_g = \operatorname{round}\!\left(\frac{37.0}{S}\right) + 1}
+N_g = f\!\left(\,C_c^*,\; C_p^*,\; C_s^*,\; L^*\;\right) \quad \text{(3rd-order LassoCV, 8 active terms — see } rsm\_equations.json \text{)}
 $$
 
-**Where:**
-- **37.0 ft** = standard two-lane bridge deck width used throughout the dataset
-- **S** = lateral center-to-center girder spacing predicted by Equation 5.2 (in feet)
-- **+1** = accounts for the edge girder beyond the last interior spacing
+**Why not a fixed deck-width formula?**
 
-**Validity bounds:** Clamped to integer range **[6, 13]** per AASHTO construction feasibility limits.
+The formula $N_g = \operatorname{round}(37.0 / S) + 1$ assumed a constant 37 ft deck width ($B = 37\text{ ft}$). However, the optimization framework depends on defined bridge width and geometric constraints. Unless 37 ft is explicitly confirmed as the uniform bridge width across all dataset rows, hardcoding $B = 37\text{ ft}$ imposes an unverified structural constraint.
 
-**Example:** If S = 5.5 ft → $N_g = \text{round}(37/5.5)+1 = \text{round}(6.73)+1 = 7+1 = 8$ girders.
+> [!IMPORTANT]
+> **Previous documentation assumed $B = 37\text{ ft}$ deck width.** This assumption has been removed. $N_g$ is now regressed directly from cost and span inputs using LassoCV (R² = **0.71**), allowing the model to adapt to dataset-inherent bridge width relationships $S = f(N_g)$.
 
-**Why not regressed?** Regressing $N_g$ on cost inputs directly gives R² = 0.59 (old method). The physics formula gives R² = **0.78** — because $N_g$ is a derived quantity, not independently driven by material costs.
+**Validity bounds:** Post-processed (Equation 6.2) to round to integer and clamp within range **[6, 13]** per AASHTO construction feasibility limits.
 
 ---
 
@@ -341,29 +393,27 @@ Ns [count] =
 
 ---
 
-### Equation 5.7: Harping Position ($H_p$, feet from beam end) — R² = 0.4722 *(Physics-Derived)*
+### Equation 5.7: Harping Position ($H_p$, feet from beam end) — R² = 0.7175 ⚠️ MODIFIED
 
-> **Not a regression target.** Harping position is physically constrained to 30–50% of span length and is not independently driven by material unit costs.
+> **ML Regression Target.** Harping position is predicted from data via LassoCV — it is **not** a fixed percentage of span length.
 
 $$
-\boxed{H_p = 0.40 \times L}
+H_p = f\!\left(\,C_c^*,\; C_p^*,\; C_s^*,\; L^*\;\right) \quad \text{(3rd-order LassoCV, 13 active terms — see } rsm\_equations.json \text{)}
 $$
 
-**Where:**
-- **0.40** = dataset mean harping fraction (across all 119 averaged cost-span families)
-- **L** = bridge span length in feet (raw, not normalized)
-- **Result:** $H_p$ in feet, measured from the beam end to the harping (deflection) point
+**Why not a fixed formula?**
 
-**Validity range:** Within the AASHTO-required zone $[0.30L,\; 0.50L]$ by construction.
+The harping position depends on:
+- **Tendon geometry** — the drape of the prestressing strand from the harping point to the beam end
+- **Harping angle constraints** — e.g. a **1:7** slope limit (rise:run) is common in practice; this directly ties $H_p$ to the eccentricity profile, not just span length
+- **Design configuration** — number of harped strands, eccentricity at midspan vs. end, cross-section depth
 
-**Examples:**
-| Span L | Computed H_p | AASHTO Zone |
-|:---:|:---:|:---|
-| 100 ft | **40 ft** | ✅ within [30, 50] ft |
-| 140 ft | **56 ft** | ✅ within [42, 70] ft |
-| 180 ft | **72 ft** | ✅ within [54, 90] ft |
+The approximation $H_p = 0.40 \times L$ was a dataset mean observed across 119 averaged cost-span families, but this is **not a universal equation**. The actual harping fraction varies with the above factors and is specific to each design scenario.
 
-**Why not regressed?** The old 15-term 2nd-order polynomial gave R² = 0.06 — essentially random. The physics formula gives R² = **0.47** with a single term. Harping position is a structural geometry choice constrained by moment envelope, not driven by unit material costs.
+> [!IMPORTANT]
+> **Previous documentation incorrectly labelled $H_p = 0.40L$ as "physics-derived".** This has been corrected. The value 0.40 was a statistical artifact of the dataset, not an AASHTO engineering formula.
+
+**AASHTO-required validity range:** Regardless of what the model predicts, $H_p$ is post-processed (see Equation 6.7) to ensure it lies within $[0,\; L]$ and is snapped to 0.5 ft increments. The physical harping zone $[0.30L,\; 0.50L]$ is a common design guideline, not a hard constraint in all configurations.
 
 ---
 
@@ -371,14 +421,16 @@ $$
 
 | Target | Symbol | Old R² (15-term Linear) | New R² (LassoCV) | Change | Method |
 |:---|:--:|:--:|:--:|:--:|:---|
-| Girder Depth | $G_d$ | −0.39 | **0.49** | +0.88 🔼 | 3rd-order Lasso, 29 terms |
-| Lateral Spacing | $S$ | 0.63 | **0.74** | +0.11 🔼 | 3rd-order Lasso, **6 terms** |
-| No. of Girders | $N_g$ | 0.59 | **0.78** | +0.19 🔼 | Physics: `round(37/S)+1` |
+| Girder Depth | $G_d$ | −0.39 | **0.49** | +0.88 🔼 | 3rd-order Lasso, 14 terms |
+| Lateral Spacing | $S$ | 0.63 | **0.74** | +0.11 🔼 | 3rd-order Lasso, 7 terms |
+| No. of Girders | $N_g$ | 0.59 | **0.71** | +0.12 🔼 | 3rd-order Lasso, 8 terms (was `round(37/S)+1`) |
 | Bot Flange Depth | $P$ | 0.07 | 0.00 | — | Lasso pruned to **1 term** |
-| Bot Flange Width | $Q$ | 0.44 | 0.13 | — | 3rd-order Lasso, 8 terms |
-| Strands per Girder | $N_s$ | 0.87 | **0.96** | +0.09 🔼 | 3rd-order Lasso, 19 terms |
-| Harp Position | $H_p$ | 0.06 | **0.47** | +0.41 🔼 | Physics: `0.40 × L` |
-| **Mean R²** | — | **0.32** | **0.53** | **+0.21 🔼** | — |
+| Bot Flange Width | $Q$ | 0.44 | 0.13 | — | 3rd-order Lasso, 14 terms |
+| Strands per Girder | $N_s$ | 0.87 | **0.96** | +0.09 🔼 | 3rd-order Lasso, 7 terms |
+| Harp Position | $H_p$ | 0.06 | **0.72** | +0.66 🔼 | 3rd-order Lasso, 13 terms (was `0.40×L`) |
+| **Mean R²** | — | **0.32** | **0.56** | **+0.24 🔼** | — |
+
+
 
 ---
 

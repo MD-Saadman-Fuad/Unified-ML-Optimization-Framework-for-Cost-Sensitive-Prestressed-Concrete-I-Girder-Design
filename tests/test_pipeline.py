@@ -53,8 +53,8 @@ def test_enforce_constraints():
     # Physical bounds [45.0, 72.0] and 0.5-in snapping
     assert 45.0 <= processed["Gir Dep (in)"] <= 72.0
     assert processed["Gir Dep (in)"] == 50.5
-    # No. of Gir agrees with spacing S = 6.0ft (round(37/6) + 1 = 7)
-    assert processed["No. of Gir"] == 7
+    # No. of Gir rounds to nearest integer (7.6 -> 8)
+    assert processed["No. of Gir"] == 8
     # Strands should round to even integer 72
     assert processed["Number of strand per girder"] == 72
     assert processed["Number of strand per girder"] % 2 == 0
