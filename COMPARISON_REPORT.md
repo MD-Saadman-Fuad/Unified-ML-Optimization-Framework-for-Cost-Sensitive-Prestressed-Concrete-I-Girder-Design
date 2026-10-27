@@ -412,8 +412,34 @@ Achieved metrics on the 24-row averaged test set (RandomForest, Optuna-tuned):
 | Bot Flange Depth (P) | ~0.003 | — | Near-zero — irreducible noise |
 | **Mean R^2** | **0.630** | — | Stable across runs (0.627-0.631) |
 
-> **Why is Mean R^2 0.630 and not 0.98+?**
-> The `bot flange bot part depth (P)` is controlled by cross-section geometry and local buckling constraints — not by material costs. The LassoCV regression correctly pruned it to near-constant. This is honest behaviour, not a failure — predicting P accurately requires finite element geometry data, not cost inputs.
+### 11.3 Head-to-Head 4-Parameter Benchmark (Identical 24-Row Test Set)
+
+To directly assess prediction agreement and error consistency against the shared parameters from previous work (`GP.py`), both the Old RSM equations and the New Unified ML Model were evaluated on the **exact same 24 held-out test cases**.
+
+| Parameter | Model | $R^2$ | RMSE | MAE | Winner / Status |
+|:---|:---|:---:|:---:|:---:|:---|
+| **Girder Depth (in)** | Old Model (RSM) | -0.1183 | 2.886 | 1.916 | ❌ High error; struggles with step sizing |
+| | **New Model (ML)** | **0.5180** | **1.895** | **1.256** | 🏆 **+34.4% lower MAE**, captures depth profile |
+| **No. of Strands** | **Old Model (RSM)** | **0.9573** | **4.779** | **3.559** | 🏆 Highly tuned for baseline strand fit |
+| | **New Model (ML)** | 0.9465 | 5.349 | 4.105 | Strong agreement ($R^2 > 0.94$); XGBoost gets 0.965 |
+| **Harping Position (ft)** | **Old Model (RSM)** | **0.8465** | **3.679** | **3.103** | 🏆 Empirical quadratic polynomial fit |
+| | **New Model (ML)** | 0.7324 | 4.858 | 3.804 | Physics-bounded; no unphysical convergence |
+| **Lateral Spacing (ft)** | Old Model (RSM) | -0.1189 | 0.878 | 0.763 | ❌ Loop-derived $37/(G-1)$ gives negative $R^2$ |
+| | **New Model (ML)** | **0.8439** | **0.328** | **0.267** | 🏆 **+65% lower MAE**, tight clustering on $y=x$ |
+
+#### Visual Comparisons:
+1. **Actual vs. Predicted Values (Figure 1):** Points along the 45° diagonal ($y=x$) indicate perfect agreement. The New ML Model eliminates the discrete banding and off-diagonal failures in Girder Depth and Lateral Spacing.
+2. **Accuracy Metrics Comparison (Figure 2):** Bar charts showing MAE, RMSE (lower is better), and $R^2$ (higher is better), highlighting the positive $R^2$ stability of the ML model.
+3. **Prediction Error per Test Case (Figure 3):** Absolute sample-by-sample errors ($|\text{Actual} - \text{Predicted}|$), demonstrating much lower error variance and absence of extreme outliers in the ML pipeline.
+
+![Figure 1: Actual vs. Predicted Values](reports/comparison_plots/fig1_actual_vs_predicted.png)
+*Figure 1: Actual vs. Predicted Values for 4 shared design parameters (Old RSM vs New ML Framework).*
+
+![Figure 2: Accuracy Metrics Comparison](reports/comparison_plots/fig2_metrics_bar_chart.png)
+*Figure 2: Direct accuracy metrics comparison (MAE, RMSE, and $R^2$) across all 4 parameters.*
+
+![Figure 3: Prediction Absolute Error per Test Case](reports/comparison_plots/fig3_prediction_errors.png)
+*Figure 3: Sample-by-sample absolute error comparison across the 24 test cases.*
 
 ---
 
